@@ -1,0 +1,372 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <title>Gemini AI Code Genius</title>
+  <style>
+    :root {
+      --bg-color: #0d0d11;
+      --sub-bg: #161620;
+      --border-color: #242436;
+      --text: #e2e8f0;
+      --text-muted: #94a3b8;
+      --accent: #3b82f6;
+      --accent-hover: #2563eb;
+      --emerald: #10b981;
+    }
+
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+      background: var(--bg-color);
+      color: var(--text);
+      padding: 14px;
+      margin: 0;
+      font-size: 13px;
+      line-height: 1.5;
+    }
+
+    .card {
+      background: var(--sub-bg);
+      border: 1px solid var(--border-color);
+      border-radius: 8px;
+      padding: 12px;
+      margin-bottom: 12px;
+    }
+
+    h2 {
+      margin: 0 0 4px 0;
+      font-size: 15px;
+      font-weight: 600;
+      color: #fff;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+
+    .subtitle {
+      font-size: 11px;
+      color: var(--text-muted);
+      margin-bottom: 12px;
+    }
+
+    label {
+      font-size: 10px;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+      color: var(--text-muted);
+      display: block;
+      margin-bottom: 6px;
+    }
+
+    input, select, textarea {
+      width: 100%;
+      background: var(--bg-color);
+      border: 1px solid var(--border-color);
+      color: #fff;
+      border-radius: 6px;
+      padding: 8px 10px;
+      font-size: 12px;
+      box-sizing: border-box;
+      outline: none;
+      transition: border 0.2s;
+    }
+
+    input:focus, select:focus, textarea:focus {
+      border-color: var(--accent);
+    }
+
+    .btn {
+      background: var(--accent);
+      color: white;
+      border: none;
+      padding: 8px 14px;
+      border-radius: 6px;
+      cursor: pointer;
+      font-size: 12px;
+      font-weight: 600;
+      transition: background 0.2s;
+      width: 100%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 6px;
+    }
+
+    .btn:hover {
+      background: var(--accent-hover);
+    }
+
+    .btn-secondary {
+      background: #1e1e2d;
+      border: 1px solid var(--border-color);
+      color: var(--text);
+    }
+
+    .btn-secondary:hover {
+      background: #252538;
+    }
+
+    .flex-row {
+      display: flex;
+      gap: 8px;
+      margin-bottom: 10px;
+    }
+
+    .status-area {
+      font-family: monospace;
+      font-size: 11px;
+      padding: 8px 12px;
+      border-radius: 6px;
+      background: var(--bg-color);
+      border: 1px solid var(--border-color);
+      margin-top: 10px;
+      word-break: break-all;
+      max-height: 120px;
+      overflow-y: auto;
+    }
+
+    .status-ok {
+      color: var(--emerald);
+    }
+
+    .status-err {
+      color: #ef4444;
+    }
+
+    .response-box {
+      font-family: monospace;
+      font-size: 11px;
+      background: #09090c;
+      border: 1px solid var(--border-color);
+      padding: 8px;
+      border-radius: 6px;
+      overflow-y: auto;
+      max-height: 200px;
+      white-space: pre-wrap;
+      color: #cbd5e1;
+      margin-top: 10px;
+    }
+
+    .pill-group {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 6px;
+      margin-bottom: 12px;
+    }
+
+    .pill {
+      background: #1b1b2a;
+      border: 1px solid var(--border-color);
+      color: var(--text-muted);
+      font-size: 11px;
+      padding: 4px 8px;
+      border-radius: 12px;
+      cursor: pointer;
+      transition: all 0.2s;
+    }
+
+    .pill:hover {
+      background: var(--accent);
+      color: white;
+      border-color: var(--accent);
+    }
+  </style>
+</head>
+<body>
+
+  <h2>🔮 Gemini AI Code Genius</h2>
+  <div class="subtitle">AI code extension powered by Pure JS & Gemini Integration</div>
+
+  <!-- API Key Storage -->
+  <div class="card">
+    <label>Gemini API Key</label>
+    <input type="password" id="apiKey" placeholder="Paste your Gemini AI API key here..." onchange="saveKey()" />
+    <p style="margin: 4px 0 0 0; font-size: 10px; color: var(--text-muted);">Stored safely in your local browser sandbox.</p>
+  </div>
+
+  <!-- Main Workspace -->
+  <div class="card">
+    <label>AI Prompt Templates</label>
+    <div class="pill-group">
+      <span class="pill" onclick="setPrompt('Explain the highlighted code block step-by-step.')">🔍 Explain Code</span>
+      <span class="pill" onclick="setPrompt('Refactor this block to use clean modern syntax and optimize performance.')">⚡ Refactor & Optimize</span>
+      <span class="pill" onclick="setPrompt('Add detailed JSDoc comments and explain parameter types.')">✍️ Comment Doc</span>
+      <span class="pill" onclick="setPrompt('Write a unit test configuration block for this code snippet.')">🧪 Generate Tests</span>
+    </div>
+
+    <label>Custom Instructions</label>
+    <textarea id="customPrompt" rows="3" placeholder="Tell Gemini what to do with the selected code..."></textarea>
+  </div>
+
+  <div class="flex-row">
+    <button class="btn btn-secondary" onclick="grabActiveCode()">📥 Get Selected Code</button>
+    <button class="btn" onclick="runAiGen()">🤖 Run AI Action</button>
+  </div>
+
+  <!-- Output Status -->
+  <div class="card" id="outputCard" style="display: none;">
+    <label>Editor Output / Actions</label>
+    <div class="flex-row">
+      <button class="btn btn" onclick="replaceInEditor()" style="background: var(--emerald);">✅ Overwrite Code</button>
+      <button class="btn btn-secondary" onclick="insertBelowEditor()">⏬ Insert Below</button>
+    </div>
+    <div class="response-box" id="aiResponse">Response will display here...</div>
+  </div>
+
+  <div class="status-area">
+    Status: <span id="status" class="status-ok">Initialized &amp; Ready</span>
+  </div>
+
+  <script>
+    // Load saved API Key on start
+    window.onload = function() {
+      const saved = localStorage.getItem('gemini_extension_key');
+      if (saved) {
+        document.getElementById('apiKey').value = saved;
+      }
+    };
+
+    function saveKey() {
+      const key = document.getElementById('apiKey').value;
+      localStorage.setItem('gemini_extension_key', key);
+      updateStatus("API key saved successfully!", false);
+    }
+
+    function updateStatus(msg, isError) {
+      const statusEl = document.getElementById('status');
+      statusEl.innerText = msg;
+      statusEl.className = isError ? 'status-err' : 'status-ok';
+    }
+
+    function setPrompt(val) {
+      document.getElementById('customPrompt').value = val;
+    }
+
+    let activeText = "";
+
+    function grabActiveCode() {
+      try {
+        const api = window.parent.EditorAPI || window.EditorAPI;
+        if (!api) {
+          updateStatus("Error: EditorAPI scope was not found.", true);
+          return;
+        }
+
+        const selection = api.editor.active.getSelection();
+        if (selection && selection.text) {
+          activeText = selection.text;
+          updateStatus(`Successfully grabbed selected code (${activeText.length} characters)`, false);
+        } else {
+          // Fallback to active file source if no selection is made
+          activeText = api.editor.active.getContent();
+          if (activeText) {
+            updateStatus(`No active selection. Grabbed complete file instead!`, false);
+          } else {
+            updateStatus("Error: Active file is empty or missing.", true);
+          }
+        }
+      } catch (err) {
+        updateStatus("API Fail: " + err.message, true);
+      }
+    }
+
+    async function runAiGen() {
+      const apiKey = document.getElementById('apiKey').value.trim();
+      const prompt = document.getElementById('customPrompt').value.trim();
+
+      if (!activeText) {
+        grabActiveCode();
+      }
+
+      if (!activeText) {
+        updateStatus("Please load/select some code contents first.", true);
+        return;
+      }
+
+      if (!prompt) {
+        updateStatus("Please enter an instructional prompt.", true);
+        return;
+      }
+
+      if (!apiKey) {
+        updateStatus("Error: Please provide your Gemini API key in the configuration field above.", true);
+        return;
+      }
+
+      updateStatus("Interfacing with Gemini API... Please wait", false);
+      const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${apiKey}`;
+
+      try {
+        const payload = {
+          contents: [{
+            parts: [{
+              text: `You are an expert software developer.
+I will give you a code snippet to modify. Respond with ONLY the updated code or explanation as requested. Do not wrap code block in markdown blocks unless they contain explanatory text.
+
+INSTRUCTION: ${prompt}
+
+CODE SNIPPET:
+${activeText}`
+            }]
+          }]
+        };
+
+        const response = await fetch(url, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(payload)
+        });
+
+        if (!response.ok) {
+          throw new Error(`API Error: ${response.status} ${response.statusText}`);
+        }
+
+        const data = await response.json();
+        let answer = data.candidates?.[0]?.content?.parts?.[0]?.text || "No output returned.";
+        
+        // Clean markdown wrapper triggers
+        answer = answer.replace(/^```[a-zA-Z]*\n/, "").replace(/\n```$/, "");
+
+        document.getElementById('aiResponse').innerText = answer;
+        document.getElementById('outputCard').style.display = 'block';
+        updateStatus("Completed successfully!", false);
+
+      } catch (e) {
+        updateStatus("Gemini API Call Failed: " + e.message, true);
+        console.error(e);
+      }
+    }
+
+    function replaceInEditor() {
+      try {
+        const api = window.parent.EditorAPI || window.EditorAPI;
+        if (!api) return;
+        const textToInsert = document.getElementById('aiResponse').innerText;
+        api.editor.active.insertText(textToInsert);
+        updateStatus("Code integrated successfully!", false);
+      } catch (e) {
+        updateStatus("Insertion error: " + e.message, true);
+      }
+    }
+
+    function insertBelowEditor() {
+      try {
+        const api = window.parent.EditorAPI || window.EditorAPI;
+        if (!api) return;
+        const textToInsert = "\n\n" + document.getElementById('aiResponse').innerText;
+        
+        // Unselect active editor selection range to insert safely
+        const selectionObj = api.editor.active.getSelection();
+        if (selectionObj) {
+          api.editor.active.setSelection(selectionObj.to);
+        }
+        api.editor.active.insertText(textToInsert);
+        updateStatus("Appended below original selection!", false);
+      } catch (e) {
+        updateStatus("Insertion error: " + e.message, true);
+      }
+    }
+  </script>
+</body>
+</html>

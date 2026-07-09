@@ -1,0 +1,211 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <title>Cool Case Transformer Extension</title>
+  <style>
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+      background: #18181c;
+      color: #e2e8f0;
+      padding: 16px;
+      margin: 0;
+      font-size: 13px;
+      line-height: 1.5;
+    }
+    .header {
+      border-bottom: 1px solid #2d3748;
+      padding-bottom: 10px;
+      margin-bottom: 12px;
+    }
+    h2 {
+      color: #3182ce;
+      margin: 0;
+      font-size: 15px;
+      font-weight: 600;
+    }
+    .desc {
+      font-size: 11px;
+      color: #a0aec0;
+      margin-top: 4px;
+    }
+    .section-title {
+      font-size: 11px;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+      color: #718096;
+      margin: 12px 0 6px 0;
+      font-weight: bold;
+    }
+    .btn-group {
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+    }
+    button {
+      background: #2b6cb0;
+      color: #ffffff;
+      border: 1px solid transparent;
+      padding: 8px 12px;
+      border-radius: 4px;
+      cursor: pointer;
+      font-size: 12px;
+      font-weight: 500;
+      text-align: left;
+      transition: all 0.2s ease;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+    button:hover {
+      background: #3182ce;
+      border-color: #63b3ed;
+    }
+    button:active {
+      transform: scale(0.98);
+    }
+    .status-card {
+      background: #2d3748;
+      border-left: 3px solid #3182ce;
+      border-radius: 3px;
+      padding: 8px 12px;
+      margin-top: 15px;
+      font-size: 11px;
+    }
+    .status-label {
+      color: #cbd5e0;
+      font-weight: bold;
+      margin-bottom: 2px;
+    }
+    .status-msg {
+      color: #a0aec0;
+      font-family: monospace;
+      font-size: 10px;
+    }
+    .badge {
+      background: #4a5568;
+      color: #cbd5e0;
+      font-size: 9px;
+      padding: 2px 6px;
+      border-radius: 10px;
+      font-weight: normal;
+    }
+  </style>
+</head>
+<body>
+
+  <div class="header">
+    <h2>⚡ AI Case Transformer</h2>
+    <div class="desc">A professional pure JS editor extension. Upload this index.html to your extension tab to try it.</div>
+  </div>
+
+  <div class="section-title">Modify Selection</div>
+  <div class="btn-group">
+    <button onclick="transformText('upper')">
+      <span>Capitalize to UPPERCASE</span>
+      <span class="badge">ABC</span>
+    </button>
+    <button onclick="transformText('lower')">
+      <span>Convert to lowercase</span>
+      <span class="badge">abc</span>
+    </button>
+    <button onclick="transformText('camel')">
+      <span>Convert to camelCase</span>
+      <span class="badge">camelCase</span>
+    </button>
+    <button onclick="transformText('snake')">
+      <span>Convert to snake_case</span>
+      <span class="badge">snake_case</span>
+    </button>
+  </div>
+
+  <div class="section-title">Decorate Code</div>
+  <div class="btn-group">
+    <button onclick="transformText('docblock')" style="background: #2c5282;">
+      <span>Add JS JSDoc Block</span>
+      <span class="badge">/** */</span>
+    </button>
+    <button onclick="transformText('banner')" style="background: #276749;">
+      <span>Add Star Comment Banner</span>
+      <span class="badge">/* ==== */</span>
+    </button>
+  </div>
+
+  <div class="status-card">
+    <div class="status-label">Extension Status:</div>
+    <div class="status-msg" id="status">Ready and listening</div>
+  </div>
+
+  <script>
+    function updateStatus(msg, isError = false) {
+      const statusEl = document.getElementById('status');
+      statusEl.innerText = msg;
+      statusEl.style.color = isError ? '#f56565' : '#4fd1c5';
+    }
+
+    function transformText(mode) {
+      try {
+        // Expose communication through global EditorAPI scope either on iframe window or window.parent
+        const api = window.parent.EditorAPI || window.EditorAPI;
+        if (!api) {
+          updateStatus("Error: EditorAPI was not found. Open this in your Custom Extensions tab to link.", true);
+          return;
+        }
+
+        const activeFile = api.editor.active.getPath();
+        if (!activeFile) {
+          updateStatus("Error: No active file currently open in the main view.", true);
+          return;
+        }
+
+        const selection = api.editor.active.getSelection();
+
+        if (mode === 'docblock' || mode === 'banner') {
+          const dateStr = new Date().toLocaleDateString();
+          let header = "";
+          if (mode === 'docblock') {
+            header = `/**\n * @file ${activeFile}\n * @date ${dateStr}\n * @description Custom extension auto-decorator\n */\n`;
+          } else {
+            header = `/* ==========================================================================\n   AUTO GENERATED BANNER UNIT - ${dateStr}\n   ========================================================================== */\n`;
+          }
+          const success = api.editor.active.insertText(header);
+          if (success) {
+            updateStatus("Snippet successfully inserted!");
+          } else {
+            updateStatus("Failed to insert comment block.", true);
+          }
+          return;
+        }
+
+        if (!selection || !selection.text) {
+          updateStatus("Error: Please SELECT some text in the code editor first.", true);
+          return;
+        }
+
+        let text = selection.text;
+        let transformedText = "";
+
+        if (mode === 'upper') {
+          transformedText = text.toUpperCase();
+        } else if (mode === 'lower') {
+          transformedText = text.toLowerCase();
+        } else if (mode === 'camel') {
+          transformedText = text.replace(/[-_]([a-z])/g, (g) => g[1].toUpperCase());
+        } else if (mode === 'snake') {
+          transformedText = text.replace(/([A-Z])/g, "_$1").toLowerCase().replace(/^_/, "");
+        }
+
+        const success = api.editor.active.insertText(transformedText);
+        if (success) {
+          updateStatus(`Transformed "${text.substring(0, 15)}${text.length > 15 ? '...' : ''}" successfully!`);
+        } else {
+          updateStatus("Failed to overwrite active selection.", true);
+        }
+      } catch (err) {
+        updateStatus("Exception: " + err.message, true);
+        console.error(err);
+      }
+    }
+  </script>
+</body>
+</html>
