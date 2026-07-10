@@ -159,6 +159,17 @@ import { RenameFileModal } from './components/RenameFileModal';
 import { HelpModal } from './components/HelpModal';
 import { Filesystem, Directory } from '@capacitor/filesystem';
 import { Share } from '@capacitor/share';
+import { registerPlugin } from '@capacitor/core';
+
+interface SAFPluginType {
+  chooseAndReadDirectory(): Promise<{
+    folderName: string;
+    files: Record<string, { code: string; language: string }>;
+  }>;
+}
+
+const SAF = registerPlugin<SAFPluginType>('SAF');
+
 
 const FONT_OPTIONS: Record<string, string> = {
   'Segoe UI': '"Segoe UI", -apple-system, BlinkMacSystemFont, sans-serif',
@@ -666,31 +677,89 @@ export default function App() {
     setIsInstallable(false);
   }, [deferredPrompt]);
 
-  const toggleVoiceInput = useCallback(() => {
-    const SpeechRecognition = (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition;
-    if (!SpeechRecognition) return;
+  const toggleVoiceInput = useCallback(async () => {
+    if ((window as any).Capacitor && (window as any).Capacitor.isNativePlatform()) {
+      try {
+        const { SpeechRecognition } = await import('@capacitor-community/speech-recognition');
+        const availableRes = await SpeechRecognition.available();
+        if (!availableRes.available) {
+          alert('Speech recognition is not available on this device.');
+          return;
+        }
 
-    const recognition = new SpeechRecognition();
-    recognition.continuous = false;
-    recognition.interimResults = false;
-    recognition.lang = 'en-US';
+        const perm = await SpeechRecognition.checkPermissions();
+        if (perm.speechRecognition !== 'granted') {
+          await SpeechRecognition.requestPermissions();
+        }
 
-    recognition.onstart = () => setIsListening(true);
-    recognition.onend = () => setIsListening(false);
-    recognition.onresult = (event: any) => {
-      const transcript = event.results[0][0].transcript;
-      setWelcomeChatInput(prev => prev + (prev ? ' ' : '') + transcript);
-      if (welcomeChatRef.current) {
-        setTimeout(() => {
+        setIsListening(true);
+        const result = await SpeechRecognition.start({
+          language: 'en-US',
+          maxResults: 1,
+          partialResults: false,
+          popup: true
+        });
+        
+        setIsListening(false);
+        if (result.matches && result.matches.length > 0) {
+          const transcript = result.matches[0];
+          setWelcomeChatInput(prev => prev + (prev ? ' ' : '') + transcript);
           if (welcomeChatRef.current) {
-            welcomeChatRef.current.style.height = 'auto';
-            welcomeChatRef.current.style.height = `${Math.min(welcomeChatRef.current.scrollHeight, 150)}px`;
+            setTimeout(() => {
+              if (welcomeChatRef.current) {
+                welcomeChatRef.current.style.height = 'auto';
+                welcomeChatRef.current.style.height = `${Math.min(welcomeChatRef.current.scrollHeight, 150)}px`;
+              }
+            }, 0);
           }
-        }, 0);
+        }
+      } catch (err: any) {
+        setIsListening(false);
+        console.error('Capacitor Speech Recognition Error:', err);
+        alert('Speech recognition failed: ' + err.message);
       }
-    };
-    
-    recognition.start();
+      return;
+    }
+
+    // Standard web browser fallback
+    const SpeechRecognitionClass = (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition;
+    if (!SpeechRecognitionClass) {
+      alert('Speech Recognition is not supported in this browser.');
+      return;
+    }
+
+    try {
+      const recognition = new SpeechRecognitionClass();
+      recognition.continuous = false;
+      recognition.interimResults = false;
+      recognition.lang = 'en-US';
+
+      recognition.onstart = () => setIsListening(true);
+      recognition.onend = () => setIsListening(false);
+      recognition.onerror = (event: any) => {
+        setIsListening(false);
+        console.error('Speech recognition error:', event);
+        alert('Speech recognition error: ' + event.error);
+      };
+      recognition.onresult = (event: any) => {
+        const transcript = event.results[0][0].transcript;
+        setWelcomeChatInput(prev => prev + (prev ? ' ' : '') + transcript);
+        if (welcomeChatRef.current) {
+          setTimeout(() => {
+            if (welcomeChatRef.current) {
+              welcomeChatRef.current.style.height = 'auto';
+              welcomeChatRef.current.style.height = `${Math.min(welcomeChatRef.current.scrollHeight, 150)}px`;
+            }
+          }, 0);
+        }
+      };
+      
+      recognition.start();
+    } catch (err: any) {
+      setIsListening(false);
+      console.error('Speech recognition init error:', err);
+      alert('Failed to start speech recognition: ' + err.message);
+    }
   }, [welcomeChatInput]);
 
   useEffect(() => {
@@ -3132,6 +3201,58 @@ export default function App() {
     }
   }, [setFiles, setPreviewFiles, setOpenFiles, setEditorPanes, setActiveFile, activeProjectId]);
 
+  const handleImportSAFDirectory = useCallback(async (folderName: string, filesData: Record<string, { code: string, language: string }>) => {
+    setIsLoading(true);
+    try {
+      const keys = Object.keys(filesData);
+      if (keys.length === 0) {
+        alert("The selected folder is empty.");
+        return;
+      }
+
+      let firstFile = keys.find(k => k.includes('index.html')) || keys.find(k => k.includes('main.')) || keys[0];
+
+      setFiles(prev => {
+        const nextFiles = { ...prev, ...filesData };
+        if (!activeProjectId) {
+          const newProject: Project = {
+            id: generateId(),
+            name: folderName || `Imported Project`,
+            messages: [],
+            files: nextFiles,
+            activeFile: firstFile || 'index.html',
+            openFiles: [firstFile || 'index.html'],
+            createdAt: Date.now()
+          };
+          requestAnimationFrame(() => {
+            setProjects(p => [newProject, ...p]);
+            setActiveProjectId(newProject.id);
+          });
+        }
+        return nextFiles;
+      });
+      setPreviewFiles(prev => ({ ...prev, ...filesData }));
+      
+      setOpenFiles(prev => {
+        const toAdd = keys.filter(f => !prev.includes(f));
+        return Array.from(new Set([...prev, ...toAdd]));
+      });
+      
+      if (firstFile) {
+        setActiveFile(firstFile);
+        setEditorPanes([firstFile]);
+      }
+
+      alert(`Successfully imported ${keys.length} files from folder "${folderName}"!`);
+    } catch (err: any) {
+      console.error("Error importing SAF directory:", err);
+      alert("Failed to import SAF directory: " + err.message);
+    } finally {
+      setIsLoading(false);
+    }
+  }, [activeProjectId]);
+
+
   const handleZipUpload = useCallback(async (e: React.ChangeEvent<HTMLInputElement>) => {
     const zipFile = e.target.files?.[0];
     if (!zipFile) return;
@@ -3409,15 +3530,36 @@ export default function App() {
 
   const handleDownloadProject = useCallback(async () => {
     const JSZip = (await import('jszip')).default;
-    const { saveAs } = await import('file-saver');
     const zip = new JSZip();
 
     Object.entries(files).forEach(([path, file]) => {
       zip.file(path, file.code);
     });
 
-    const content = await zip.generateAsync({ type: 'blob' });
-    saveAs(content, 'project.zip');
+    if ((window as any).Capacitor && (window as any).Capacitor.isNativePlatform()) {
+      try {
+        const base64 = await zip.generateAsync({ type: 'base64' });
+        const result = await Filesystem.writeFile({
+          path: 'project.zip',
+          data: base64,
+          directory: Directory.Cache
+        });
+        
+        await Share.share({
+          title: 'Export Project',
+          text: 'Save or share your project ZIP file',
+          url: result.uri,
+          dialogTitle: 'Save Project'
+        });
+      } catch (error) {
+        console.error('Capacitor download project error:', error);
+        alert('Failed to export project: ' + (error as Error).message);
+      }
+    } else {
+      const { saveAs } = await import('file-saver');
+      const content = await zip.generateAsync({ type: 'blob' });
+      saveAs(content, 'project.zip');
+    }
   }, [files]);
 
   const confirmGithubExport = async () => {
@@ -5653,6 +5795,34 @@ export default function App() {
                     </p>
                   </div>
                 </button>
+
+                {/* Option 3: Local Folder (SAF) */}
+                <button 
+                  onClick={async () => {
+                    setShowAndroidImportModal(false);
+                    try {
+                      const res = await SAF.chooseAndReadDirectory();
+                      if (res && res.files) {
+                        handleImportSAFDirectory(res.folderName, res.files);
+                      }
+                    } catch (err: any) {
+                      console.error('SAF Error:', err);
+                      alert('Failed to import folder: ' + err.message);
+                    }
+                  }}
+                  className="w-full p-4 border border-[#007acc]/40 hover:border-[#007acc] bg-[#007acc]/5 hover:bg-[#007acc]/10 text-left transition-all flex items-start gap-3 group rounded"
+                >
+                  <div className="p-2 bg-[#007acc]/20 rounded group-hover:bg-[#007acc]/30 text-[#007acc] transition-colors mt-0.5">
+                    <FolderOpen size={20} />
+                  </div>
+                  <div>
+                    <h4 className="font-bold text-[#ffffff] mb-0.5">Open Local Folder (SAF Support)</h4>
+                    <p className="text-[11.5px] text-[#858585] group-hover:text-[#cccccc] transition-colors">
+                      Select any local folder on your device using Android Storage Access Framework. It imports all nested files recursively.
+                    </p>
+                  </div>
+                </button>
+
               </div>
             </div>
             
