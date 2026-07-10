@@ -157,6 +157,8 @@ import { GithubImportModal } from './components/GithubImportModal';
 import { DeleteFileModal } from './components/DeleteFileModal';
 import { RenameFileModal } from './components/RenameFileModal';
 import { HelpModal } from './components/HelpModal';
+import { Filesystem, Directory } from '@capacitor/filesystem';
+import { Share } from '@capacitor/share';
 
 const FONT_OPTIONS: Record<string, string> = {
   'Segoe UI': '"Segoe UI", -apple-system, BlinkMacSystemFont, sans-serif',
@@ -396,6 +398,8 @@ export default function App() {
   const stopRef = useRef(false);
   const [activeTab, setActiveTab] = useState<'projects' | 'settings'>('projects');
   const [showSettingsMenu, setShowSettingsMenu] = useState(false);
+  const [showAndroidImportModal, setShowAndroidImportModal] = useState(false);
+  const [androidImportTarget, setAndroidImportTarget] = useState<'welcome' | 'sidebar'>('welcome');
   const [settingsCategory, setSettingsCategory] = useState<'appearance' | 'editor' | 'application' | 'syntax'>('appearance');
   const [syntaxThemeName, setSyntaxThemeName] = useState(() => localStorage.getItem('reversx_syntax_theme') || 'VS Code Dark');
 
@@ -3756,13 +3760,60 @@ export default function App() {
   };
 
   const handleDownloadFallback = async (filename: string, content: string) => {
-    const blob = new Blob([content], { type: 'text/plain' });
-    const url = URL.createObjectURL(blob);
+    // 1. If running in Capacitor (native Android app)
+    if ((window as any).Capacitor && (window as any).Capacitor.isNativePlatform()) {
+      try {
+        let fileData = content;
+        let isBase64 = false;
+
+        // If it's a data URL (e.g. image), extract the raw base64 data
+        if (content.startsWith('data:') && content.includes(';base64,')) {
+          const parts = content.split(';base64,');
+          fileData = parts[1];
+          isBase64 = true;
+        }
+
+        // Write the file to the Cache directory
+        const result = await Filesystem.writeFile({
+          path: filename,
+          data: fileData,
+          directory: Directory.Cache,
+          encoding: isBase64 ? undefined : 'utf8' as any
+        });
+        
+        // Share the saved file to let user save it or share it
+        await Share.share({
+          title: `Download ${filename}`,
+          text: `Save or share your file: ${filename}`,
+          url: result.uri,
+          dialogTitle: 'Save File'
+        });
+      } catch (error) {
+        console.error('Capacitor download error:', error);
+        alert('Failed to save file: ' + (error as Error).message);
+      }
+      return;
+    }
+
+    // 2. Standard Web fallback
+    const isBase64 = content.startsWith('data:') && content.includes(';base64,');
+    let url = '';
+    
+    if (isBase64) {
+      url = content; // It is already a data URL
+    } else {
+      const blob = new Blob([content], { type: 'text/plain' });
+      url = URL.createObjectURL(blob);
+    }
+
     const a = document.createElement('a');
     a.href = url;
     a.download = filename;
     a.click();
-    URL.revokeObjectURL(url);
+    
+    if (!isBase64) {
+      URL.revokeObjectURL(url);
+    }
     alert(`Downloaded ${filename} to your device.`);
   };
 
@@ -4953,7 +5004,14 @@ export default function App() {
                         <div className="flex flex-col items-start gap-3">
                           <h2 className="text-[#cccccc] text-lg font-normal mb-1">Start</h2>
                           <button 
-                            onClick={() => folderInputRef.current?.click()}
+                            onClick={() => {
+                              if ((window as any).Capacitor && (window as any).Capacitor.isNativePlatform()) {
+                                setAndroidImportTarget('welcome');
+                                setShowAndroidImportModal(true);
+                              } else {
+                                folderInputRef.current?.click();
+                              }
+                            }}
                             className="flex items-center gap-2 text-[#007acc] hover:underline text-[13px] transition-colors"
                           >
                             <FolderOpen size={16} />
@@ -5536,6 +5594,80 @@ export default function App() {
         confirmGithubImport={confirmGithubImport}
         isGitHubImporting={isGitHubImporting}
       />
+
+      {showAndroidImportModal && (
+        <div className="fixed inset-0 bg-black/60 backdrop-blur-xs z-[200] flex items-center justify-center p-4">
+          <div className="bg-[#1e1e1e] border border-[#333333] shadow-2xl w-full max-w-md overflow-hidden text-[#cccccc] rounded-lg">
+            {/* Header */}
+            <div className="px-4 py-3 bg-[#252526] border-b border-[#333333] flex items-center justify-between">
+              <span className="font-bold text-[13px] text-[#ffffff] tracking-wide uppercase">Import Project on Android</span>
+              <button 
+                onClick={() => setShowAndroidImportModal(false)}
+                className="text-zinc-400 hover:text-white transition-colors"
+              >
+                <X size={16} />
+              </button>
+            </div>
+            
+            {/* Content */}
+            <div className="p-5 flex flex-col gap-4 text-[12.5px] leading-relaxed">
+              <p className="text-[#858585]">
+                Android restricts opening raw directories directly in the WebView. Choose one of the secure ways below to load your project:
+              </p>
+              
+              <div className="flex flex-col gap-3">
+                {/* Option 1: ZIP File (Recommended) */}
+                <button 
+                  onClick={() => {
+                    setShowAndroidImportModal(false);
+                    zipInputRef.current?.click();
+                  }}
+                  className="w-full p-4 border border-[#007acc]/40 hover:border-[#007acc] bg-[#007acc]/5 hover:bg-[#007acc]/10 text-left transition-all flex items-start gap-3 group rounded"
+                >
+                  <div className="p-2 bg-[#007acc]/20 rounded group-hover:bg-[#007acc]/30 text-[#007acc] transition-colors mt-0.5">
+                    <Blocks size={20} />
+                  </div>
+                  <div>
+                    <h4 className="font-bold text-[#ffffff] mb-0.5">Import ZIP File (Highly Recommended)</h4>
+                    <p className="text-[11.5px] text-[#858585] group-hover:text-[#cccccc] transition-colors">
+                      Select a `.zip` file of your project. It extracts automatically and preserves your full folder structure perfectly.
+                    </p>
+                  </div>
+                </button>
+
+                {/* Option 2: Multiple Files */}
+                <button 
+                  onClick={() => {
+                    setShowAndroidImportModal(false);
+                    explorerFileInputRef.current?.click();
+                  }}
+                  className="w-full p-4 border border-[#333333] hover:border-zinc-500 bg-white/5 hover:bg-white/10 text-left transition-all flex items-start gap-3 group rounded"
+                >
+                  <div className="p-2 bg-white/5 rounded group-hover:bg-white/10 text-zinc-300 transition-colors mt-0.5">
+                    <FilePlus size={20} />
+                  </div>
+                  <div>
+                    <h4 className="font-bold text-[#ffffff] mb-0.5">Select Multiple Files</h4>
+                    <p className="text-[11.5px] text-[#858585] group-hover:text-[#cccccc] transition-colors">
+                      Select one or multiple source code files to import directly into your workspace.
+                    </p>
+                  </div>
+                </button>
+              </div>
+            </div>
+            
+            {/* Footer */}
+            <div className="px-4 py-3 bg-[#252526] border-t border-[#333333] flex justify-end">
+              <button 
+                onClick={() => setShowAndroidImportModal(false)}
+                className="px-4 py-1.5 bg-[#333333] hover:bg-[#454545] text-white text-[12px] font-medium transition-colors rounded"
+              >
+                Close
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Folders creation handled inline */}
 
