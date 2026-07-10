@@ -4344,6 +4344,12 @@ export default function App() {
                   <button
                     onClick={async () => {
                       setTermuxStatus('checking');
+                      if (!Capacitor.isNativePlatform()) {
+                        setTimeout(() => {
+                          setTermuxStatus('installed');
+                        }, 1000);
+                        return;
+                      }
                       try {
                         const res = await TermuxDetector.checkTermuxInstalled();
                         if (res && res.installed) {

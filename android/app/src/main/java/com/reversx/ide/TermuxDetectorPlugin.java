@@ -1,6 +1,7 @@
 package com.reversx.ide;
 
 import android.content.Context;
+import android.content.Intent;
 import android.content.pm.PackageManager;
 import com.getcapacitor.JSObject;
 import com.getcapacitor.Plugin;
@@ -16,11 +17,27 @@ public class TermuxDetectorPlugin extends Plugin {
         Context context = getContext();
         PackageManager pm = context.getPackageManager();
         boolean isInstalled = false;
+        
+        // Method 1: Check by package info
         try {
             pm.getPackageInfo("com.termux", 0);
             isInstalled = true;
         } catch (PackageManager.NameNotFoundException e) {
             isInstalled = false;
+        } catch (Exception e) {
+            isInstalled = false;
+        }
+
+        // Method 2: Check by launch intent as fallback
+        if (!isInstalled) {
+            try {
+                Intent intent = pm.getLaunchIntentForPackage("com.termux");
+                if (intent != null) {
+                    isInstalled = true;
+                }
+            } catch (Exception e) {
+                // Ignore fallback exception
+            }
         }
 
         JSObject result = new JSObject();
