@@ -159,16 +159,14 @@ import { RenameFileModal } from './components/RenameFileModal';
 import { HelpModal } from './components/HelpModal';
 import { Filesystem, Directory } from '@capacitor/filesystem';
 import { Share } from '@capacitor/share';
-import { registerPlugin } from '@capacitor/core';
+import { registerPlugin, Capacitor } from '@capacitor/core';
+import { motion, AnimatePresence } from 'motion/react';
 
-interface SAFPluginType {
-  chooseAndReadDirectory(): Promise<{
-    folderName: string;
-    files: Record<string, { code: string; language: string }>;
-  }>;
+interface TermuxDetectorPluginType {
+  checkTermuxInstalled(): Promise<{ installed: boolean }>;
 }
 
-const SAF = registerPlugin<SAFPluginType>('SAF');
+const TermuxDetector = registerPlugin<TermuxDetectorPluginType>('TermuxDetector');
 
 
 const FONT_OPTIONS: Record<string, string> = {
@@ -396,6 +394,7 @@ const buildFileTree = (filesList: string[]) => {
 
 export default function App() {
   const [isDbLoaded, setIsDbLoaded] = useState(false);
+  const [termuxStatus, setTermuxStatus] = useState<'checking' | 'installed' | 'not_installed'>('checking');
   const [userName, setUserName] = useState<string | null>(null);
   const [showNamePrompt, setShowNamePrompt] = useState(false);
   const [tempName, setTempName] = useState('');
@@ -1200,6 +1199,41 @@ export default function App() {
     };
     setTimeout(loadState, 4000);
   }, []);
+
+  useEffect(() => {
+    let active = true;
+    const detectTermux = async () => {
+      if (!Capacitor.isNativePlatform()) {
+        setTermuxStatus('checking');
+        const timer = setTimeout(() => {
+          if (active) setTermuxStatus('installed');
+        }, 1500);
+        return () => clearTimeout(timer);
+      }
+
+      try {
+        setTermuxStatus('checking');
+        const res = await TermuxDetector.checkTermuxInstalled();
+        if (active) {
+          if (res && res.installed) {
+            setTermuxStatus('installed');
+          } else {
+            setTermuxStatus('not_installed');
+          }
+        }
+      } catch (err) {
+        console.error("Error detecting Termux on Android device:", err);
+        if (active) setTermuxStatus('not_installed');
+      }
+    };
+
+    if (isDbLoaded) {
+      detectTermux();
+    }
+    return () => {
+      active = false;
+    };
+  }, [isDbLoaded]);
 
   const activeEditorRef = useRef<any>(null);
 
@@ -3201,47 +3235,6 @@ export default function App() {
     }
   }, [setFiles, setPreviewFiles, setOpenFiles, setEditorPanes, setActiveFile, activeProjectId]);
 
-  const handleImportSAFDirectory = useCallback(async (folderName: string, filesData: Record<string, { code: string, language: string }>) => {
-    setIsLoading(true);
-    try {
-      const keys = Object.keys(filesData);
-      if (keys.length === 0) {
-        alert("The selected folder is empty.");
-        return;
-      }
-
-      let firstFile = keys.find(k => k.includes('index.html')) || keys.find(k => k.includes('main.')) || keys[0];
-
-      const newProject: Project = {
-        id: generateId(),
-        name: folderName || `Imported Project`,
-        messages: [],
-        files: filesData,
-        activeFile: firstFile || 'index.html',
-        openFiles: [firstFile || 'index.html'],
-        createdAt: Date.now()
-      };
-
-      setProjects(prev => [newProject, ...prev]);
-      setActiveProjectId(newProject.id);
-      setMessages([]);
-      setFiles(filesData);
-      setPreviewFiles(filesData);
-      setOpenFiles([firstFile || 'index.html']);
-      setActiveFile(firstFile || 'index.html');
-      setEditorPanes([firstFile || 'index.html']);
-      setActiveTab('projects');
-
-      alert(`Successfully imported "${folderName}" (${keys.length} files)!`);
-    } catch (err: any) {
-      console.error("Error importing SAF directory:", err);
-      alert("Failed to import SAF directory: " + err.message);
-    } finally {
-      setIsLoading(false);
-    }
-  }, [setProjects, setActiveProjectId, setMessages, setFiles, setPreviewFiles, setOpenFiles, setActiveFile, setEditorPanes, setActiveTab]);
-
-
   const handleZipUpload = useCallback(async (e: React.ChangeEvent<HTMLInputElement>) => {
     const zipFile = e.target.files?.[0];
     if (!zipFile) return;
@@ -4239,17 +4232,151 @@ export default function App() {
     }));
   }, [activeFile]);
 
-  if (!isDbLoaded) {
+  if (!isDbLoaded || termuxStatus !== 'installed') {
+    if (!isDbLoaded) {
+      return (
+        <div className="flex w-screen h-screen bg-background p-4 gap-4">
+          <Skeleton className="w-[50px] h-full" />
+          <Skeleton className="w-[260px] h-full" />
+          <div className="flex-1 flex flex-col gap-4">
+            <Skeleton className="w-full h-9" />
+            <Skeleton className="w-full h-full" />
+            <Skeleton className="w-full h-[22px]" />
+          </div>
+        </div>
+      );
+    }
+
     return (
-    <div className="flex w-screen h-screen bg-background p-4 gap-4">
-      <Skeleton className="w-[50px] h-full" />
-      <Skeleton className="w-[260px] h-full" />
-      <div className="flex-1 flex flex-col gap-4">
-        <Skeleton className="w-full h-9" />
-        <Skeleton className="w-full h-full" />
-        <Skeleton className="w-full h-[22px]" />
+      <div className="w-screen h-screen bg-[#1e1e1e] text-[#cccccc] flex flex-col items-center justify-center p-6 relative overflow-hidden font-sans select-none">
+        {/* Background Grid Accent */}
+        <div className="absolute inset-0 bg-[linear-gradient(to_right,#33333311_1px,transparent_1px),linear-gradient(to_bottom,#33333311_1px,transparent_1px)] bg-[size:24px_24px] pointer-events-none" />
+        
+        {/* Glowing Ambient Light */}
+        <div className="absolute -top-40 -left-40 w-96 h-96 rounded-full bg-[#007acc]/10 blur-[120px] pointer-events-none" />
+        <div className="absolute -bottom-40 -right-40 w-96 h-96 rounded-full bg-red-500/5 blur-[120px] pointer-events-none" />
+
+        <div className="max-w-md w-full bg-[#252526] border border-[#333333] rounded-lg shadow-2xl overflow-hidden relative z-10 flex flex-col">
+          {/* Title Bar imitating VS Code style */}
+          <div className="px-4 py-2 bg-[#323233] border-b border-[#252526] flex items-center justify-between text-xs text-[#969696]">
+            <div className="flex items-center gap-2">
+              <SquareTerminal size={14} className="text-[#007acc]" />
+              <span className="font-mono font-medium">ReversX IDE - Environment Guard</span>
+            </div>
+            <div className="flex gap-1.5">
+              <span className="w-2.5 h-2.5 rounded-full bg-[#ff5f56]/30" />
+              <span className="w-2.5 h-2.5 rounded-full bg-[#ffbd2e]/30" />
+              <span className="w-2.5 h-2.5 rounded-full bg-[#27c93f]/30" />
+            </div>
+          </div>
+
+          <div className="p-8 flex flex-col items-center text-center">
+            {termuxStatus === 'checking' ? (
+              <div className="flex flex-col items-center py-6">
+                {/* Loader Animation */}
+                <div className="relative mb-6">
+                  <div className="w-16 h-16 rounded-full border-4 border-[#007acc]/20 border-t-[#007acc] animate-spin" />
+                  <Terminal size={24} className="absolute inset-0 m-auto text-[#007acc] animate-pulse" />
+                </div>
+                
+                <h3 className="text-lg font-bold text-[#f1f1f1] mb-2 tracking-tight">
+                  Scanning Environment
+                </h3>
+                <p className="text-xs text-[#858585] max-w-[280px]">
+                  Detecting installed development packages and querying package manager for <span className="font-mono text-[#007acc]">com.termux</span>...
+                </p>
+              </div>
+            ) : (
+              <div className="flex flex-col items-center">
+                {/* Warning Icon with red theme */}
+                <div className="w-16 h-16 rounded-full bg-[#ff4a4a]/10 border border-[#ff4a4a]/30 flex items-center justify-center text-[#ff4a4a] mb-6 shadow-lg shadow-[#ff4a4a]/5">
+                  <Bug size={32} />
+                </div>
+
+                <h3 className="text-xl font-bold text-[#f1f1f1] mb-1 tracking-tight">
+                  Termux Application Required
+                </h3>
+                <p className="text-xs text-[#ff4a4a] font-medium bg-[#ff4a4a]/10 px-2.5 py-1 rounded border border-[#ff4a4a]/20 mb-4 font-mono">
+                  com.termux NOT INSTALLED
+                </p>
+
+                {/* Multilingual Explanations */}
+                <div className="space-y-3.5 mb-6 text-left border-t border-b border-[#333333] py-4 w-full">
+                  <div>
+                    <span className="text-[10px] uppercase font-bold tracking-wider text-[#969696] block mb-1">English</span>
+                    <p className="text-[12px] text-[#cccccc] leading-relaxed">
+                      ReversX IDE uses Termux internally to execute shell processes, compile source files, and offer full terminal support. You must install Termux to proceed.
+                    </p>
+                  </div>
+                  <div>
+                    <span className="text-[10px] uppercase font-bold tracking-wider text-[#007acc] block mb-1">বাংলা</span>
+                    <p className="text-[12px] text-[#cccccc] leading-relaxed font-normal">
+                      এই IDE দিয়ে কোড রান, টার্মিনাল কমান্ড ব্যবহার এবং ফাইল কমপাইল করতে আপনার ফোনে <strong>Termux</strong> অ্যাপ্লিকেশনটি ইনস্টল থাকতে হবে। Termux ছাড়া IDE চালানো সম্ভব নয়।
+                    </p>
+                  </div>
+                </div>
+
+                {/* Downloads & Links Helper */}
+                <div className="w-full bg-[#1e1e1e] rounded p-3 text-left border border-[#333333] text-[11px] mb-6 space-y-2">
+                  <div className="font-medium text-[#858585]">Download verified Termux APK:</div>
+                  <div className="flex flex-col gap-1.5">
+                    <a 
+                      href="https://f-droid.org/en/packages/com.termux/" 
+                      target="_blank" 
+                      rel="noopener noreferrer"
+                      className="text-[#007acc] hover:underline flex items-center gap-1.5 font-medium transition-colors"
+                    >
+                      <span>• Download from F-Droid (Recommended)</span>
+                    </a>
+                    <a 
+                      href="https://github.com/termux/termux-app/releases" 
+                      target="_blank" 
+                      rel="noopener noreferrer"
+                      className="text-[#007acc] hover:underline flex items-center gap-1.5 font-medium transition-colors"
+                    >
+                      <span>• Download from GitHub Releases</span>
+                    </a>
+                  </div>
+                </div>
+
+                {/* Action Buttons */}
+                <div className="flex flex-col gap-2.5 w-full">
+                  <button
+                    onClick={async () => {
+                      setTermuxStatus('checking');
+                      try {
+                        const res = await TermuxDetector.checkTermuxInstalled();
+                        if (res && res.installed) {
+                          setTermuxStatus('installed');
+                        } else {
+                          // Short artificial delay to show re-check scanning state smoothly
+                          setTimeout(() => {
+                            setTermuxStatus('not_installed');
+                          }, 800);
+                        }
+                      } catch (err) {
+                        console.error("Manual re-check error:", err);
+                        setTimeout(() => {
+                          setTermuxStatus('not_installed');
+                        }, 800);
+                      }
+                    }}
+                    className="w-full py-2 bg-[#007acc] hover:bg-[#0062a3] active:bg-[#004e82] text-white rounded font-medium text-[13px] transition-all flex items-center justify-center gap-2 shadow-md shadow-[#007acc]/10 cursor-pointer"
+                  >
+                    <RefreshCw size={14} className="animate-spin" style={{ animationDuration: '3s' }} />
+                    <span>Re-detect / Try Again (পুনরায় চেক করুন)</span>
+                  </button>
+                </div>
+              </div>
+            )}
+          </div>
+        </div>
+
+        {/* Brand Footer */}
+        <div className="mt-8 text-[11px] text-[#555555] font-mono tracking-widest uppercase">
+          Powered by VS Code Engine for Android
+        </div>
       </div>
-    </div>
     );
   }
 
@@ -5781,33 +5908,6 @@ export default function App() {
                     <h4 className="font-bold text-[#ffffff] mb-0.5">Select Multiple Files</h4>
                     <p className="text-[11.5px] text-[#858585] group-hover:text-[#cccccc] transition-colors">
                       Select one or multiple source code files to import directly into your workspace.
-                    </p>
-                  </div>
-                </button>
-
-                {/* Option 3: Local Folder (SAF) */}
-                <button 
-                  onClick={async () => {
-                    setShowAndroidImportModal(false);
-                    try {
-                      const res = await SAF.chooseAndReadDirectory();
-                      if (res && res.files) {
-                        handleImportSAFDirectory(res.folderName, res.files);
-                      }
-                    } catch (err: any) {
-                      console.error('SAF Error:', err);
-                      alert('Failed to import folder: ' + err.message);
-                    }
-                  }}
-                  className="w-full p-4 border border-[#007acc]/40 hover:border-[#007acc] bg-[#007acc]/5 hover:bg-[#007acc]/10 text-left transition-all flex items-start gap-3 group rounded"
-                >
-                  <div className="p-2 bg-[#007acc]/20 rounded group-hover:bg-[#007acc]/30 text-[#007acc] transition-colors mt-0.5">
-                    <FolderOpen size={20} />
-                  </div>
-                  <div>
-                    <h4 className="font-bold text-[#ffffff] mb-0.5">Open Local Folder (SAF Support)</h4>
-                    <p className="text-[11.5px] text-[#858585] group-hover:text-[#cccccc] transition-colors">
-                      Select any local folder on your device using Android Storage Access Framework. It imports all nested files recursively.
                     </p>
                   </div>
                 </button>
