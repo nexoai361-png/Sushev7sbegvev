@@ -3212,45 +3212,34 @@ export default function App() {
 
       let firstFile = keys.find(k => k.includes('index.html')) || keys.find(k => k.includes('main.')) || keys[0];
 
-      setFiles(prev => {
-        const nextFiles = { ...prev, ...filesData };
-        if (!activeProjectId) {
-          const newProject: Project = {
-            id: generateId(),
-            name: folderName || `Imported Project`,
-            messages: [],
-            files: nextFiles,
-            activeFile: firstFile || 'index.html',
-            openFiles: [firstFile || 'index.html'],
-            createdAt: Date.now()
-          };
-          requestAnimationFrame(() => {
-            setProjects(p => [newProject, ...p]);
-            setActiveProjectId(newProject.id);
-          });
-        }
-        return nextFiles;
-      });
-      setPreviewFiles(prev => ({ ...prev, ...filesData }));
-      
-      setOpenFiles(prev => {
-        const toAdd = keys.filter(f => !prev.includes(f));
-        return Array.from(new Set([...prev, ...toAdd]));
-      });
-      
-      if (firstFile) {
-        setActiveFile(firstFile);
-        setEditorPanes([firstFile]);
-      }
+      const newProject: Project = {
+        id: generateId(),
+        name: folderName || `Imported Project`,
+        messages: [],
+        files: filesData,
+        activeFile: firstFile || 'index.html',
+        openFiles: [firstFile || 'index.html'],
+        createdAt: Date.now()
+      };
 
-      alert(`Successfully imported ${keys.length} files from folder "${folderName}"!`);
+      setProjects(prev => [newProject, ...prev]);
+      setActiveProjectId(newProject.id);
+      setMessages([]);
+      setFiles(filesData);
+      setPreviewFiles(filesData);
+      setOpenFiles([firstFile || 'index.html']);
+      setActiveFile(firstFile || 'index.html');
+      setEditorPanes([firstFile || 'index.html']);
+      setActiveTab('projects');
+
+      alert(`Successfully imported "${folderName}" (${keys.length} files)!`);
     } catch (err: any) {
       console.error("Error importing SAF directory:", err);
       alert("Failed to import SAF directory: " + err.message);
     } finally {
       setIsLoading(false);
     }
-  }, [activeProjectId]);
+  }, [setProjects, setActiveProjectId, setMessages, setFiles, setPreviewFiles, setOpenFiles, setActiveFile, setEditorPanes, setActiveTab]);
 
 
   const handleZipUpload = useCallback(async (e: React.ChangeEvent<HTMLInputElement>) => {

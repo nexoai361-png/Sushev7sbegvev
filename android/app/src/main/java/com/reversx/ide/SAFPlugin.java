@@ -28,7 +28,7 @@ public class SAFPlugin extends Plugin {
     }
 
     @ActivityCallback
-    private void pickDirectoryResult(PluginCall call, ActivityResult result) {
+    public void pickDirectoryResult(PluginCall call, ActivityResult result) {
         if (call == null) return;
         if (result.getResultCode() != Activity.RESULT_OK || result.getData() == null) {
             call.reject("User cancelled or failed to select directory");
