@@ -120,7 +120,8 @@ import {
   FileCode2 as FileCode2Icon,
   FileJson2 as FileJson2Icon,
   MoreHorizontal as MoreHorizontalIcon,
-  Key
+  Key,
+  FolderPlus
 } from 'lucide-react';
 import { IconContext, useIcons, ICON_THEMES, Codicon } from './lib/icons';
 
@@ -159,6 +160,7 @@ import { RenameFileModal } from './components/RenameFileModal';
 import { HelpModal } from './components/HelpModal';
 import { Filesystem, Directory } from '@capacitor/filesystem';
 import { Share } from '@capacitor/share';
+import { Saf } from './lib/saf';
 import { registerPlugin, Capacitor } from '@capacitor/core';
 import { motion, AnimatePresence } from 'motion/react';
 
@@ -5910,21 +5912,64 @@ export default function App() {
                   </div>
                 </button>
 
-                {/* Option 2: Multiple Files */}
+                {/* Option 3: SAF Directory Picker */}
                 <button 
-                  onClick={() => {
+                  onClick={async () => {
                     setShowAndroidImportModal(false);
-                    explorerFileInputRef.current?.click();
+                    try {
+                      const result = await Saf.pickDirectory();
+                      if (result && result.uri) {
+                        const { files: safFiles } = await Saf.listFiles({ uri: result.uri });
+                        const newFiles: Record<string, { code: string; language: string }> = { ...files };
+                        let hasChanges = false;
+                        
+                        for (const file of safFiles) {
+                          if (!file.isDirectory) {
+                            try {
+                              const { data } = await Saf.readFile({ uri: file.uri });
+                              const name = file.name;
+                              const ext = name.split('.').pop()?.toLowerCase() || '';
+                              
+                              const langMap: Record<string, string> = {
+                                'js': 'javascript', 'jsx': 'javascript',
+                                'ts': 'typescript', 'tsx': 'typescript',
+                                'py': 'python', 'html': 'html', 'css': 'css',
+                                'json': 'json', 'md': 'markdown'
+                              };
+                              const language = langMap[ext] || 'text';
+                              newFiles[name] = { code: data, language };
+                              hasChanges = true;
+                            } catch (e) {
+                              console.error("Failed to read SAF file:", file.name, e);
+                            }
+                          }
+                        }
+                        
+                        if (hasChanges) {
+                          setFiles(newFiles);
+                          const newNames = Object.keys(newFiles);
+                          if (newNames.length > 0 && !activeFile) {
+                            setActiveFile(newNames[0]);
+                            if (!openFiles.includes(newNames[0])) {
+                              setOpenFiles(prev => [...prev, newNames[0]]);
+                            }
+                          }
+                        }
+                      }
+                    } catch (e) {
+                      console.error("SAF Error:", e);
+                      alert("Error picking directory: " + (e as any).message);
+                    }
                   }}
                   className="w-full p-4 border border-[#333333] hover:border-zinc-500 bg-white/5 hover:bg-white/10 text-left transition-all flex items-start gap-3 group rounded"
                 >
                   <div className="p-2 bg-white/5 rounded group-hover:bg-white/10 text-zinc-300 transition-colors mt-0.5">
-                    <FilePlus size={20} />
+                    <FolderPlus size={20} />
                   </div>
                   <div>
-                    <h4 className="font-bold text-[#ffffff] mb-0.5">Select Multiple Files</h4>
+                    <h4 className="font-bold text-[#ffffff] mb-0.5">Import Folder (Native Android SAF)</h4>
                     <p className="text-[11.5px] text-[#858585] group-hover:text-[#cccccc] transition-colors">
-                      Select one or multiple source code files to import directly into your workspace.
+                      Select an entire folder using Android's native file picker. 
                     </p>
                   </div>
                 </button>
