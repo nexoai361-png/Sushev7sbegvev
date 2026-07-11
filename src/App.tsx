@@ -395,6 +395,7 @@ const buildFileTree = (filesList: string[]) => {
 export default function App() {
   const [isDbLoaded, setIsDbLoaded] = useState(false);
   const [termuxStatus, setTermuxStatus] = useState<'checking' | 'installed' | 'not_installed'>('checking');
+  const [isLoggedIn, setIsLoggedIn] = useState(false);
   const [userName, setUserName] = useState<string | null>(null);
   const [showNamePrompt, setShowNamePrompt] = useState(false);
   const [tempName, setTempName] = useState('');
@@ -4232,7 +4233,7 @@ export default function App() {
     }));
   }, [activeFile]);
 
-  if (!isDbLoaded || termuxStatus !== 'installed') {
+  if (!isDbLoaded || !isLoggedIn) {
     if (!isDbLoaded) {
       return (
         <div className="flex w-screen h-screen bg-background p-4 gap-4">
@@ -4286,6 +4287,25 @@ export default function App() {
                   Detecting installed development packages and querying package manager for <span className="font-mono text-[#007acc]">com.termux</span>...
                 </p>
               </div>
+            ) : termuxStatus === 'installed' ? (
+              <div className="flex flex-col items-center">
+                <div className="w-16 h-16 rounded-full bg-[#27c93f]/10 border border-[#27c93f]/30 flex items-center justify-center text-[#27c93f] mb-6 shadow-lg shadow-[#27c93f]/5">
+                  <CheckCircle size={32} />
+                </div>
+                <h3 className="text-xl font-bold text-[#f1f1f1] mb-1 tracking-tight">
+                  Termux Detected
+                </h3>
+                <p className="text-xs text-[#27c93f] font-medium bg-[#27c93f]/10 px-2.5 py-1 rounded border border-[#27c93f]/20 mb-6 font-mono">
+                  com.termux INSTALLED
+                </p>
+                <button
+                  onClick={() => setIsLoggedIn(true)}
+                  className="w-full py-2 bg-[#007acc] hover:bg-[#0062a3] active:bg-[#004e82] text-white rounded font-medium text-[13px] transition-all flex items-center justify-center gap-2 shadow-md shadow-[#007acc]/10 cursor-pointer"
+                >
+                  <SquareTerminal size={14} />
+                  <span>Login to IDE</span>
+                </button>
+              </div>
             ) : (
               <div className="flex flex-col items-center">
                 {/* Warning Icon with red theme */}
@@ -4300,20 +4320,11 @@ export default function App() {
                   com.termux NOT INSTALLED
                 </p>
 
-                {/* Multilingual Explanations */}
-                <div className="space-y-3.5 mb-6 text-left border-t border-b border-[#333333] py-4 w-full">
-                  <div>
-                    <span className="text-[10px] uppercase font-bold tracking-wider text-[#969696] block mb-1">English</span>
-                    <p className="text-[12px] text-[#cccccc] leading-relaxed">
-                      ReversX IDE uses Termux internally to execute shell processes, compile source files, and offer full terminal support. You must install Termux to proceed.
-                    </p>
-                  </div>
-                  <div>
-                    <span className="text-[10px] uppercase font-bold tracking-wider text-[#007acc] block mb-1">বাংলা</span>
-                    <p className="text-[12px] text-[#cccccc] leading-relaxed font-normal">
-                      এই IDE দিয়ে কোড রান, টার্মিনাল কমান্ড ব্যবহার এবং ফাইল কমপাইল করতে আপনার ফোনে <strong>Termux</strong> অ্যাপ্লিকেশনটি ইনস্টল থাকতে হবে। Termux ছাড়া IDE চালানো সম্ভব নয়।
-                    </p>
-                  </div>
+                {/* English Explanation */}
+                <div className="mb-6 text-left border-t border-b border-[#333333] py-4 w-full">
+                  <p className="text-[12px] text-[#cccccc] leading-relaxed">
+                    ReversX IDE uses Termux internally to execute shell processes, compile source files, and offer full terminal support. You must install Termux to proceed.
+                  </p>
                 </div>
 
                 {/* Downloads & Links Helper */}
@@ -4370,7 +4381,7 @@ export default function App() {
                     className="w-full py-2 bg-[#007acc] hover:bg-[#0062a3] active:bg-[#004e82] text-white rounded font-medium text-[13px] transition-all flex items-center justify-center gap-2 shadow-md shadow-[#007acc]/10 cursor-pointer"
                   >
                     <RefreshCw size={14} className="animate-spin" style={{ animationDuration: '3s' }} />
-                    <span>Re-detect / Try Again (পুনরায় চেক করুন)</span>
+                    <span>Re-detect / Try Again</span>
                   </button>
                 </div>
               </div>

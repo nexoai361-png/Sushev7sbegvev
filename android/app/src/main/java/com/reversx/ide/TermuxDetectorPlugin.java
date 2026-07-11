@@ -40,6 +40,18 @@ public class TermuxDetectorPlugin extends Plugin {
             }
         }
 
+        // Method 3: Check by application info
+        if (!isInstalled) {
+            try {
+                android.content.pm.ApplicationInfo info = pm.getApplicationInfo("com.termux", 0);
+                if (info != null && info.enabled) {
+                    isInstalled = true;
+                }
+            } catch (Exception e) {
+                // Ignore fallback exception
+            }
+        }
+
         JSObject result = new JSObject();
         result.put("installed", isInstalled);
         call.resolve(result);
