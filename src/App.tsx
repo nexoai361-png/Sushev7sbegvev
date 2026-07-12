@@ -1133,9 +1133,13 @@ export default function App() {
       document.head.appendChild(metaViewport);
     }
     if (isDesktopMode) {
-      metaViewport.setAttribute('content', 'width=1024');
+      metaViewport.setAttribute('content', 'width=1200, initial-scale=0.3, minimum-scale=0.1, maximum-scale=5.0, user-scalable=yes');
+      document.body.classList.add('is-desktop-mode');
+      document.documentElement.classList.add('is-desktop-mode');
     } else {
-      metaViewport.setAttribute('content', 'width=device-width, initial-scale=1.0');
+      metaViewport.setAttribute('content', 'width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no');
+      document.body.classList.remove('is-desktop-mode');
+      document.documentElement.remove('is-desktop-mode');
     }
   }, [isDesktopMode]);
 
@@ -4901,7 +4905,7 @@ export default function App() {
                 className={`flex flex-col bg-[#252526] border-r border-[#2b2b2b] transition-all duration-300 ease-in-out overflow-hidden
                   ${isExplorerOpen && !isEditorFullscreen && !isZenMode ? (isLandscape ? 'w-[200px]' : 'w-[260px]') + ' opacity-100 pointer-events-auto' : 'w-0 opacity-0 pointer-events-none'}
                   ${isDragging ? 'ring-2 ring-accent ring-inset bg-accent/5' : ''}
-                  fixed inset-y-0 left-0 z-[60] md:relative md:z-10
+                  ${isDesktopMode ? 'relative z-10' : 'fixed inset-y-0 left-0 z-[60] md:relative md:z-10'}
                 `}
                 style={{ fontFamily: "'Cabin', sans-serif" }}
               >
@@ -5588,7 +5592,7 @@ export default function App() {
               </div>
             </div>
           ) : (
-            <div className={`h-full w-full relative md:pt-0 pt-10 flex flex-col items-center transition-all duration-500 ${previewDevice !== 'desktop' ? 'bg-[#121212] p-8 overflow-auto' : 'bg-white'} custom-scrollbar`}>
+            <div className={`h-full w-full relative ${isDesktopMode ? 'pt-0' : 'md:pt-0 pt-10'} flex flex-col items-center transition-all duration-500 ${previewDevice !== 'desktop' ? 'bg-[#121212] p-8 overflow-auto' : 'bg-white'} custom-scrollbar`}>
               <div className={`relative transition-all duration-500 shadow-2xl overflow-hidden shrink-0 flex flex-col items-center ${previewDevice === 'desktop' ? '' : 'my-auto'}`} style={{
                 width: previewDevice === 'mobile' ? '375px' : previewDevice === 'laptop' ? '1024px' : '100%',
                 height: previewDevice === 'mobile' ? '667px' : previewDevice === 'laptop' ? '640px' : '100%',

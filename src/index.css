@@ -534,3 +534,21 @@ body {
   font-family: "Segoe UI", "Segoe UI Web (West European)", "Inter", sans-serif !important;
 }
 
+/* Desktop Mode Styles for mobile/Capacitor views */
+html.is-desktop-mode, body.is-desktop-mode {
+  position: relative !important;
+  overflow: auto !important;
+  width: 1200px !important;
+  min-width: 1200px !important;
+  height: 100dvh !important;
+  touch-action: auto !important;
+  -webkit-overflow-scrolling: touch !important;
+}
+
+html.is-desktop-mode #root, body.is-desktop-mode #root {
+  width: 1200px !important;
+  min-width: 1200px !important;
+  height: 100% !important;
+  overflow: visible !important;
+}
+
