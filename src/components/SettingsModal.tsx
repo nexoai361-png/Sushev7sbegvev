@@ -22,7 +22,11 @@ interface SettingsModalProps {
   isInstallable: boolean;
   handleInstallClick: () => void;
   appFontName: string;
-  setAppFontName: (font: string) => void;
+  setAppFontName,
+  isDesktopMode,
+  setIsDesktopMode: (font: string) => void;
+  isDesktopMode: boolean;
+  setIsDesktopMode: (mode: boolean) => void;
 }
 
 const FONT_OPTIONS_MAP: Record<string, string> = {
@@ -67,6 +71,8 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
   handleInstallClick,
   appFontName,
   setAppFontName,
+  isDesktopMode,
+  setIsDesktopMode,
 }) => {
   const [settingsCategory, setSettingsCategory] = useState<'appearance' | 'editor' | 'application' | 'syntax'>('appearance');
   const [isFontDropdownOpen, setIsFontDropdownOpen] = useState(false);
@@ -178,7 +184,9 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
                               <button
                                 key={fontName}
                                 onClick={() => {
-                                  setAppFontName(fontName);
+                                  setAppFontName,
+  isDesktopMode,
+  setIsDesktopMode(fontName);
                                   setIsFontDropdownOpen(false);
                                 }}
                                 className={`w-full px-3 py-2 text-left text-[11px] transition-colors hover:bg-[#007acc] hover:text-white flex items-center justify-between ${
@@ -325,6 +333,19 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
                         </button>
                       </div>
                     )}
+
+                    <div className="bg-background p-4 rounded-[2px] border border-white/5 flex items-center justify-between">
+                      <div>
+                        <h4 className="text-[12px] font-medium text-white mb-1">Desktop Mode</h4>
+                        <p className="text-[11px] text-[#858585]">Enable resizable panels like VS Code (like tablet/laptop view).</p>
+                      </div>
+                      <button
+                        onClick={() => setIsDesktopMode(!isDesktopMode)}
+                        className={`relative w-8 h-4 rounded-full transition-colors ${isDesktopMode ? 'bg-[#007acc]' : 'bg-[#3e3e42]'}`}
+                      >
+                        <div className={`absolute top-0.5 left-0.5 w-3 h-3 bg-white rounded-full transition-transform ${isDesktopMode ? 'translate-x-4' : 'translate-x-0'}`} />
+                      </button>
+                    </div>
 
                     <div className="text-[11px] text-[#858585] space-y-1">
                       <p>Version: 1.0.0 (Preview)</p>

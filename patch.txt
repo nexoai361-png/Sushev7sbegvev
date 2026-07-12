@@ -1,0 +1,15 @@
+  useEffect(() => {
+    let metaViewport = document.querySelector('meta[name=viewport]');
+    if (!metaViewport) {
+      metaViewport = document.createElement('meta');
+      metaViewport.setAttribute('name', 'viewport');
+      document.head.appendChild(metaViewport);
+    }
+    if (isDesktopMode) {
+      metaViewport.setAttribute('content', 'width=1024');
+    } else {
+      metaViewport.setAttribute('content', 'width=device-width, initial-scale=1.0');
+    }
+  }, [isDesktopMode]);
+
+  // Initial Data Load

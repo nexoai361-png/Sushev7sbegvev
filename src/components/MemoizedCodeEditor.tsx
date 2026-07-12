@@ -903,7 +903,7 @@ Instructions: Modify the code according to the task. Return ONLY the modified co
                 <div className="flex items-center justify-between">
                   <div className="flex items-center gap-2 text-accent">
                     <Sparkles size={14} />
-                    <span className="text-[11px] font-bold uppercase tracking-wider">AI Inline Edit</span>
+                    <span className="text-[11px] font-bold  tracking-wider">AI Inline Edit</span>
                   </div>
                   <button onClick={() => setShowInlineAI(false)} className="text-zinc-500 hover:text-white">
                     <X size={14} />

@@ -526,3 +526,11 @@ code, pre {
 }
 
 
+
+h1, h2, h3, h4, h5, h6, b, strong, .font-bold, .font-semibold, .font-extrabold {
+  font-family: "Open Sans", "Inter", sans-serif !important;
+}
+body {
+  font-family: "Segoe UI", "Segoe UI Web (West European)", "Inter", sans-serif !important;
+}
+

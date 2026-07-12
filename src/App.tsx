@@ -812,6 +812,7 @@ export default function App() {
 
   const [mainView, setMainView] = useState<'editor' | 'preview' | 'projects' | 'settings'>('editor');
   const [mobileView, setMobileView] = useState<'editor' | 'chat' | 'preview' | 'tab'>('editor');
+  const [isDesktopMode, setIsDesktopMode] = useState(false);
   const [showSnippetEditor, setShowSnippetEditor] = useState<Snippet | null>(null);
   const [showSnippetsModal, setShowSnippetsModal] = useState(false);
   const [showProjectNaming, setShowProjectNaming] = useState(false);
@@ -1124,6 +1125,20 @@ export default function App() {
     if (isDbLoaded) idbSet('reversx_bookmarks', bookmarks);
   }, [bookmarks, isDbLoaded]);
 
+  useEffect(() => {
+    let metaViewport = document.querySelector('meta[name=viewport]');
+    if (!metaViewport) {
+      metaViewport = document.createElement('meta');
+      metaViewport.setAttribute('name', 'viewport');
+      document.head.appendChild(metaViewport);
+    }
+    if (isDesktopMode) {
+      metaViewport.setAttribute('content', 'width=1024');
+    } else {
+      metaViewport.setAttribute('content', 'width=device-width, initial-scale=1.0');
+    }
+  }, [isDesktopMode]);
+
   // Initial Data Load
   useEffect(() => {
     const loadState = async () => {
@@ -1187,6 +1202,7 @@ export default function App() {
         setActiveFile(await checkAndMigrate('reversx_active_file', false, ''));
         setOpenFiles(await checkAndMigrate('reversx_open_files', true, []));
         setAppThemeName(await checkAndMigrate('reversx_app_theme', false, 'VS Code Dark'));
+        setIsDesktopMode(await checkAndMigrate('reversx_desktop_mode', false, false));
         setIconThemeName(await checkAndMigrate('reversx_icon_theme', false, 'VS code'));
         setFileIconSize(await checkAndMigrate('reversx_file_icon_size', false, 16));
         setAppFontName(await checkAndMigrate('reversx_app_font', false, 'Inter'));
@@ -2070,7 +2086,8 @@ export default function App() {
 
   useEffect(() => {
     db.setItem('reversx_mobile_view', mobileView);
-  }, [mobileView]);
+    idbSet('reversx_desktop_mode', isDesktopMode);
+  }, [mobileView, isDesktopMode]);
 
   useEffect(() => {
     if (userName) {
@@ -4392,7 +4409,7 @@ export default function App() {
         </div>
 
         {/* Brand Footer */}
-        <div className="mt-8 text-[11px] text-[#555555] font-mono tracking-widest uppercase">
+        <div className="mt-8 text-[11px] text-[#555555] font-mono tracking-widest">
           Powered by VS Code Engine for Android
         </div>
       </div>
@@ -4634,9 +4651,9 @@ export default function App() {
 
       {/* Sidebar Content */}
       <div 
-        style={{ width: isZenMode ? '0px' : (isSidebarMinimized ? '0px' : (mobileView === 'chat' ? '100%' : '0px')), height: isZenMode ? '0px' : (mobileView === 'chat' ? '100%' : '0px') }}
+        style={isDesktopMode ? { width: isZenMode ? '0px' : (isSidebarMinimized ? '0px' : sidebarWidth), height: '100%' } : { width: isZenMode ? '0px' : (isSidebarMinimized ? '0px' : (mobileView === 'chat' ? '100%' : '0px')), height: isZenMode ? '0px' : (mobileView === 'chat' ? '100%' : '0px') }}
         className={`
-          ${mobileView === 'chat' && !isZenMode ? 'flex flex-1' : 'hidden'} 
+          ${isDesktopMode ? (isZenMode ? 'hidden' : 'flex') : (mobileView === 'chat' && !isZenMode ? 'flex flex-1' : 'hidden')} 
           border-r border-border bg-sidebar flex-col overflow-hidden transition-all duration-300 ease-in-out relative
         `}
       >
@@ -4678,7 +4695,7 @@ export default function App() {
             {/* VS Code Style Header */}
             <div className="px-4 py-2 border-b border-white/[0.05] flex items-center justify-between bg-background shrink-0">
               <div className="flex flex-col gap-0.5">
-                <span className="text-[11px] font-bold text-[#858585] uppercase tracking-wider">Project History</span>
+                <span className="text-[11px] font-bold text-[#858585] tracking-wider">Project History</span>
                 <div className="flex items-center gap-2">
                   <span className="text-[12px] font-semibold text-[#cccccc]">Workspace Apps</span>
                   <span className="text-[#858585] text-[10px] tabular-nums">({projects.length})</span>
@@ -4859,7 +4876,7 @@ export default function App() {
 
       {/* Main Content Area */}
       <div className={`
-        ${(mobileView !== 'chat' || isZenMode) ? 'flex flex-1' : 'hidden'} 
+        ${isDesktopMode ? 'flex flex-1' : ((mobileView !== 'chat' || isZenMode) ? 'flex flex-1' : 'hidden')} 
         flex-col bg-background overflow-hidden relative
       `}>
         {isSidebarMinimized && (
@@ -4891,12 +4908,12 @@ export default function App() {
                 {isDragging && (
                   <div className="absolute inset-0 z-[70] flex flex-col items-center justify-center bg-accent/10 backdrop-blur-[2px] pointer-events-none border-2 border-dashed border-accent/40 m-2 rounded-lg">
                     <PlusIcon className="text-accent mb-2" size={24} />
-                    <span className="text-[10px] font-extrabold text-accent tracking-[0.2em] uppercase">Drop to Import</span>
+                    <span className="text-[10px] font-extrabold text-accent tracking-[0.2em] ">Drop to Import</span>
                   </div>
                 )}
                 <div className="h-9 flex items-center justify-between px-4 bg-[#252526] shrink-0 select-none">
                   <div className="flex items-center gap-2">
-                    <span className="text-[11px] font-bold text-[#bbbbbb] uppercase tracking-wider font-inherit select-none">EXPLORER</span>
+                    <span className="text-[11px] font-bold text-[#bbbbbb] tracking-wider font-inherit select-none">Explorer</span>
                   </div>
                   <div className="flex items-center gap-0.5">
                     <div className="relative">
@@ -4923,7 +4940,7 @@ export default function App() {
                                 className="w-full px-3 py-1.5 flex items-center gap-2 text-left text-[11.5px] text-[#cccccc] hover:bg-[#007acc] hover:text-white transition-colors rounded-none font-inherit whitespace-nowrap"
                                 title="Upload multiple files"
                               >
-                                <FilePlus size={12} strokeWidth={2} />
+                                
                                 <span className="leading-none pt-[1px] whitespace-nowrap">Upload file</span>
                               </button>
                               <button 
@@ -4931,7 +4948,7 @@ export default function App() {
                                 className="w-full px-3 py-1.5 flex items-center gap-2 text-left text-[11.5px] text-[#cccccc] hover:bg-[#007acc] hover:text-white transition-colors rounded-none font-inherit whitespace-nowrap"
                                 title="Upload ZIP and extract"
                               >
-                                <Blocks size={12} strokeWidth={2} />
+                                
                                 <span className="leading-none pt-[1px] whitespace-nowrap">Upload Zip file</span>
                               </button>
                               <button 
@@ -4939,7 +4956,7 @@ export default function App() {
                                 className="w-full px-3 py-1.5 flex items-center gap-2 text-left text-[11.5px] text-[#cccccc] hover:bg-[#007acc] hover:text-white transition-colors rounded-none font-inherit whitespace-nowrap"
                                 title="Upload images and videos"
                               >
-                                <Film size={12} strokeWidth={2} />
+                                
                                 <span className="leading-none pt-[1px] whitespace-nowrap">Upload media file</span>
                               </button>
                               </div>
@@ -4985,14 +5002,14 @@ export default function App() {
                                 onClick={() => { handleCreateFile(); setIsExplorerCreateMenuOpen(false); }}
                                 className="w-full px-3 py-1.5 flex items-center gap-2 text-left text-[11.5px] text-[#cccccc] hover:bg-[#007acc] hover:text-white transition-colors rounded-none font-inherit whitespace-nowrap"
                               >
-                                <FilePlus size={12} strokeWidth={2.5} />
+                                
                                 <span className="leading-none pt-[1px] whitespace-nowrap">New File</span>
                               </button>
                               <button 
                                 onClick={() => { handleCreateFolder(); setIsExplorerCreateMenuOpen(false); }}
                                 className="w-full px-3 py-1.5 flex items-center gap-2 text-left text-[11.5px] text-[#cccccc] hover:bg-[#007acc] hover:text-white transition-colors rounded-none font-inherit whitespace-nowrap"
                               >
-                                <FolderPlus size={12} strokeWidth={2.5} />
+                                
                                 <span className="leading-none pt-[1px] whitespace-nowrap">New Folder</span>
                               </button>
                               <button 
@@ -5003,7 +5020,7 @@ export default function App() {
                                 className="w-full px-3 py-1.5 flex items-center gap-2 text-left text-[11.5px] text-[#cccccc] hover:bg-[#007acc] hover:text-white transition-colors rounded-none font-inherit whitespace-nowrap"
                                 title="Download Project"
                               >
-                                <Download size={12} strokeWidth={2.5} />
+                                
                                 <span className="leading-none pt-[1px] whitespace-nowrap">Export ZIP</span>
                               </button>
                             </div>
@@ -5015,9 +5032,9 @@ export default function App() {
                 </div>
                 <div className={`custom-scrollbar bg-[#252526] pb-4 ${isBookmarksCollapsed ? 'flex-1 overflow-y-auto' : 'flex-[3] min-h-[150px] overflow-y-auto'}`}>
                   <div className="pl-2 h-[22px] pr-3 flex items-center justify-between text-[#cccccc] hover:bg-white/[0.04] cursor-pointer group transition-colors border-t border-b border-[#2b2b2b]">
-                    <div className="flex items-center gap-1 font-bold text-[11px] uppercase tracking-wider opacity-100 transition-opacity">
+                    <div className="flex items-center gap-1 font-bold text-[11px] tracking-wider opacity-100 transition-opacity">
                       <ChevronDownIcon size={12} className="text-[#cccccc]" />
-                      <span className="select-none leading-none pt-[1px] text-[#bbbbbb] font-inherit">WORKSPACE</span>
+                      <span className="select-none leading-none pt-[1px] text-[#bbbbbb] font-inherit">Workspace</span>
                     </div>
                     <div className="flex items-center">
                       <button 
@@ -5107,10 +5124,10 @@ export default function App() {
                     onClick={() => setIsBookmarksCollapsed(!isBookmarksCollapsed)}
                     className="pl-2 h-[22px] pr-3 flex items-center justify-between text-[#cccccc] hover:bg-white/[0.04] cursor-pointer group transition-colors border-b border-[#2b2b2b]"
                   >
-                    <div className="flex items-center gap-1 font-bold text-[11px] uppercase tracking-wider">
+                    <div className="flex items-center gap-1 font-bold text-[11px] tracking-wider">
                       {isBookmarksCollapsed ? <ChevronRightIcon size={12} /> : <ChevronDownIcon size={12} />}
                       <span className="select-none leading-none pt-[1px] text-[#bbbbbb] font-inherit">
-                        BOOKMARKS 🔖 ({bookmarks.filter(b => b.projectId === activeProjectId).length})
+                        Bookmarks 🔖 ({bookmarks.filter(b => b.projectId === activeProjectId).length})
                       </span>
                     </div>
                     {bookmarks.some(b => b.projectId === activeProjectId) && (
@@ -5264,7 +5281,7 @@ export default function App() {
                           className="flex items-center gap-2 px-4 py-2 bg-accent/10 hover:bg-accent/20 text-accent rounded-full border border-accent/30 transition-all active:bg-accent/20 group animate-in slide-in-from-right-4 duration-500"
                         >
                           <Download size={16} className="group-hover:bounce" />
-                          <span className="text-xs font-bold uppercase tracking-wider">Install App</span>
+                          <span className="text-xs font-bold tracking-wider">Install App</span>
                         </button>
                       )}
                     </div>
@@ -5444,15 +5461,15 @@ export default function App() {
                       <div className="mt-4 flex items-center justify-center gap-6 opacity-30 select-none">
                         <div className="flex items-center gap-2">
                           <div className="w-4 h-4 rounded border border-white/20 flex items-center justify-center text-[9px] font-bold">L</div>
-                          <span className="text-[10px] uppercase tracking-widest">Search</span>
+                          <span className="text-[10px] tracking-widest">Search</span>
                         </div>
                         <div className="flex items-center gap-2">
                           <div className="w-4 h-4 rounded border border-white/20 flex items-center justify-center text-[9px] font-bold">K</div>
-                          <span className="text-[10px] uppercase tracking-widest">Chat</span>
+                          <span className="text-[10px] tracking-widest">Chat</span>
                         </div>
                         <div className="flex items-center gap-2">
                           <div className="w-4 h-4 rounded border border-white/20 flex items-center justify-center text-[9px] font-bold">I</div>
-                          <span className="text-[10px] uppercase tracking-widest">Edit</span>
+                          <span className="text-[10px] tracking-widest">Edit</span>
                         </div>
                       </div>
                     </div>
@@ -5843,6 +5860,8 @@ export default function App() {
         handleInstallClick={handleInstallClick}
         appFontName={appFontName}
         setAppFontName={setAppFontName}
+        isDesktopMode={isDesktopMode}
+        setIsDesktopMode={setIsDesktopMode}
       />
 
       <GithubExportModal 
@@ -5877,7 +5896,7 @@ export default function App() {
           <div className="bg-[#1e1e1e] border border-[#333333] shadow-2xl w-full max-w-md overflow-hidden text-[#cccccc] rounded-lg">
             {/* Header */}
             <div className="px-4 py-3 bg-[#252526] border-b border-[#333333] flex items-center justify-between">
-              <span className="font-bold text-[13px] text-[#ffffff] tracking-wide uppercase">Import Project on Android</span>
+              <span className="font-bold text-[13px] text-[#ffffff] tracking-wide">Import Project on Android</span>
               <button 
                 onClick={() => setShowAndroidImportModal(false)}
                 className="text-zinc-400 hover:text-white transition-colors"
