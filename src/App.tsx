@@ -1096,7 +1096,7 @@ export default function App() {
   
   useEffect(() => {
     if (isDbLoaded) idbSet('reversx_app_font', appFontName);
-    document.documentElement.style.setProperty('--app-ui-font', FONT_OPTIONS[appFontName] || 'Inter, sans-serif');
+    document.documentElement?.style?.setProperty('--app-ui-font', FONT_OPTIONS[appFontName] || 'Inter, sans-serif');
   }, [appFontName, isDbLoaded]);
   
   useEffect(() => {
@@ -1130,16 +1130,20 @@ export default function App() {
     if (!metaViewport) {
       metaViewport = document.createElement('meta');
       metaViewport.setAttribute('name', 'viewport');
-      document.head.appendChild(metaViewport);
+      if (document.head) {
+        document.head.appendChild(metaViewport);
+      }
     }
-    if (isDesktopMode) {
-      metaViewport.setAttribute('content', 'width=1200, initial-scale=0.3, minimum-scale=0.1, maximum-scale=5.0, user-scalable=yes');
-      document.body.classList.add('is-desktop-mode');
-      document.documentElement.classList.add('is-desktop-mode');
-    } else {
-      metaViewport.setAttribute('content', 'width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no');
-      document.body.classList.remove('is-desktop-mode');
-      document.documentElement.remove('is-desktop-mode');
+    if (metaViewport) {
+      if (isDesktopMode) {
+        metaViewport.setAttribute('content', 'width=1200, initial-scale=0.3, minimum-scale=0.1, maximum-scale=5.0, user-scalable=yes');
+        if (document.body) document.body.classList.add('is-desktop-mode');
+        if (document.documentElement) document.documentElement.classList.add('is-desktop-mode');
+      } else {
+        metaViewport.setAttribute('content', 'width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no');
+        if (document.body) document.body.classList.remove('is-desktop-mode');
+        if (document.documentElement) document.documentElement.classList.remove('is-desktop-mode');
+      }
     }
   }, [isDesktopMode]);
 
@@ -2109,30 +2113,36 @@ export default function App() {
     // Apply app theme variables
     const theme = APP_THEMES[appThemeName] || APP_THEMES['VS Code Dark'];
     const root = document.documentElement;
-    root.style.setProperty('--color-background', theme.background);
-    root.style.setProperty('--color-foreground', theme.foreground);
-    root.style.setProperty('--color-accent', theme.accent);
-    root.style.setProperty('--color-accent-foreground', theme.accentForeground || '#ffffff');
-    root.style.setProperty('--color-sidebar', theme.sidebar);
-    root.style.setProperty('--color-border', theme.border);
-    root.style.setProperty('--color-muted', theme.muted);
-    root.style.setProperty('--color-subtle', theme.subtle);
-    root.style.setProperty('--color-foreground-muted', theme.muted);
-    root.style.setProperty('--color-foreground-subtle', theme.subtle);
-    
-    // Also update accent dim
-    const accentDim = theme.accent.startsWith('#') ? `${theme.accent}33` : 'rgba(255, 255, 255, 0.1)';
-    root.style.setProperty('--color-accent-dim', accentDim);
+    if (root && root.style) {
+      root.style.setProperty('--color-background', theme.background);
+      root.style.setProperty('--color-foreground', theme.foreground);
+      root.style.setProperty('--color-accent', theme.accent);
+      root.style.setProperty('--color-accent-foreground', theme.accentForeground || '#ffffff');
+      root.style.setProperty('--color-sidebar', theme.sidebar);
+      root.style.setProperty('--color-border', theme.border);
+      root.style.setProperty('--color-muted', theme.muted);
+      root.style.setProperty('--color-subtle', theme.subtle);
+      root.style.setProperty('--color-foreground-muted', theme.muted);
+      root.style.setProperty('--color-foreground-subtle', theme.subtle);
+      
+      // Also update accent dim
+      const accentDim = theme.accent.startsWith('#') ? `${theme.accent}33` : 'rgba(255, 255, 255, 0.1)';
+      root.style.setProperty('--color-accent-dim', accentDim);
+    }
   }, [appThemeName]);
 
   useEffect(() => {
     const root = document.documentElement;
-    root.style.setProperty('--editor-line-height', editorLineHeight.toString());
+    if (root && root.style) {
+      root.style.setProperty('--editor-line-height', editorLineHeight.toString());
+    }
   }, [editorLineHeight]);
 
   useEffect(() => {
     const root = document.documentElement;
-    root.style.setProperty('--editor-font-size', `${editorFontSize}px`);
+    if (root && root.style) {
+      root.style.setProperty('--editor-font-size', `${editorFontSize}px`);
+    }
   }, [editorFontSize]);
 
   useEffect(() => {
@@ -2153,14 +2163,16 @@ export default function App() {
       
       if (newWidth > minWidth && newWidth < maxWidth) {
         setSidebarWidth(newWidth);
-        document.documentElement.style.setProperty('--sidebar-width', `${newWidth}px`);
+        document.documentElement?.style?.setProperty('--sidebar-width', `${newWidth}px`);
       }
     }
   }, [isResizing]);
 
   const stopResizing = useCallback(() => {
     setIsResizing(false);
-    document.body.style.cursor = 'default';
+    if (document.body) {
+      document.body.style.cursor = 'default';
+    }
   }, []);
 
   const startResizing = useCallback((e: React.MouseEvent | React.TouchEvent) => {
@@ -2171,7 +2183,9 @@ export default function App() {
       e.preventDefault();
     }
     setIsResizing(true);
-    document.body.style.cursor = 'col-resize';
+    if (document.body) {
+      document.body.style.cursor = 'col-resize';
+    }
   }, []);
 
   const resizeExplorer = useCallback((e: MouseEvent | TouchEvent) => {
@@ -2202,7 +2216,9 @@ export default function App() {
 
   const stopResizingEditorSplit = useCallback(() => {
     setIsResizingEditorSplit(false);
-    document.body.style.cursor = 'default';
+    if (document.body) {
+      document.body.style.cursor = 'default';
+    }
   }, []);
 
   const startResizingEditorSplit = useCallback((e: React.MouseEvent | React.TouchEvent) => {
@@ -2210,12 +2226,16 @@ export default function App() {
       e.preventDefault();
     }
     setIsResizingEditorSplit(true);
-    document.body.style.cursor = 'col-resize';
+    if (document.body) {
+      document.body.style.cursor = 'col-resize';
+    }
   }, []);
 
   const stopResizingExplorer = useCallback(() => {
     setIsResizingExplorer(false);
-    document.body.style.cursor = 'default';
+    if (document.body) {
+      document.body.style.cursor = 'default';
+    }
   }, []);
 
   const startResizingExplorer = useCallback((e: React.MouseEvent | React.TouchEvent) => {
@@ -2223,7 +2243,9 @@ export default function App() {
       e.preventDefault();
     }
     setIsResizingExplorer(true);
-    document.body.style.cursor = 'col-resize';
+    if (document.body) {
+      document.body.style.cursor = 'col-resize';
+    }
   }, []);
 
   useEffect(() => {
