@@ -72,6 +72,10 @@ export const SnippetEditorModal = ({ snippet, onSave, onClose }: SnippetEditorMo
               value={code} 
               onChange={(e) => setCode(e.target.value)}
               placeholder="// Paste your code here..."
+              autoComplete="off"
+              autoCorrect="off"
+              autoCapitalize="off"
+              spellCheck={false}
               className="w-full flex-1 bg-black/60 border border-white/10 rounded-none p-4 text-[12px] text-zinc-300 font-mono focus:outline-none focus:border-accent resize-none leading-relaxed"
             />
           </div>

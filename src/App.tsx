@@ -120,8 +120,7 @@ import {
   FileCode2 as FileCode2Icon,
   FileJson2 as FileJson2Icon,
   MoreHorizontal as MoreHorizontalIcon,
-  Key,
-  FolderPlus
+  Key
 } from 'lucide-react';
 import { IconContext, useIcons, ICON_THEMES, Codicon } from './lib/icons';
 
@@ -812,7 +811,6 @@ export default function App() {
 
   const [mainView, setMainView] = useState<'editor' | 'preview' | 'projects' | 'settings'>('editor');
   const [mobileView, setMobileView] = useState<'editor' | 'chat' | 'preview' | 'tab'>('editor');
-  const [isDesktopMode, setIsDesktopMode] = useState(false);
   const [showSnippetEditor, setShowSnippetEditor] = useState<Snippet | null>(null);
   const [showSnippetsModal, setShowSnippetsModal] = useState(false);
   const [showProjectNaming, setShowProjectNaming] = useState(false);
@@ -846,6 +844,16 @@ export default function App() {
   const [fileIconSize, setFileIconSize] = useState(16);
   const [appFontName, setAppFontName] = useState('Inter');
   const [bookmarks, setBookmarks] = useState<Bookmark[]>([]);
+  const [shortcutPresetName, setShortcutPresetName] = useState(() => localStorage.getItem('reversx_shortcut_preset_name') || 'VS Code Default');
+  const [customSymbolsStr, setCustomSymbolsStr] = useState(() => localStorage.getItem('reversx_custom_symbols') || '<, >, /, {, }, [, ], ;, (, ), ", \', :, =, !, &, |, +, -, *, %, ?, #, $, @, ^, ~, `');
+
+  useEffect(() => {
+    localStorage.setItem('reversx_shortcut_preset_name', shortcutPresetName);
+  }, [shortcutPresetName]);
+
+  useEffect(() => {
+    localStorage.setItem('reversx_custom_symbols', customSymbolsStr);
+  }, [customSymbolsStr]);
 
   const [markers, setMarkers] = useState<EditorMarker[]>([]);
   const [auditResults, setAuditResults] = useState<string | null>(null);
@@ -1096,7 +1104,7 @@ export default function App() {
   
   useEffect(() => {
     if (isDbLoaded) idbSet('reversx_app_font', appFontName);
-    document.documentElement?.style?.setProperty('--app-ui-font', FONT_OPTIONS[appFontName] || 'Inter, sans-serif');
+    document.documentElement.style.setProperty('--app-ui-font', FONT_OPTIONS[appFontName] || 'Inter, sans-serif');
   }, [appFontName, isDbLoaded]);
   
   useEffect(() => {
@@ -1124,28 +1132,6 @@ export default function App() {
   useEffect(() => {
     if (isDbLoaded) idbSet('reversx_bookmarks', bookmarks);
   }, [bookmarks, isDbLoaded]);
-
-  useEffect(() => {
-    let metaViewport = document.querySelector('meta[name=viewport]');
-    if (!metaViewport) {
-      metaViewport = document.createElement('meta');
-      metaViewport.setAttribute('name', 'viewport');
-      if (document.head) {
-        document.head.appendChild(metaViewport);
-      }
-    }
-    if (metaViewport) {
-      if (isDesktopMode) {
-        metaViewport.setAttribute('content', 'width=1200, initial-scale=0.3, minimum-scale=0.1, maximum-scale=5.0, user-scalable=yes');
-        if (document.body) document.body.classList.add('is-desktop-mode');
-        if (document.documentElement) document.documentElement.classList.add('is-desktop-mode');
-      } else {
-        metaViewport.setAttribute('content', 'width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no');
-        if (document.body) document.body.classList.remove('is-desktop-mode');
-        if (document.documentElement) document.documentElement.classList.remove('is-desktop-mode');
-      }
-    }
-  }, [isDesktopMode]);
 
   // Initial Data Load
   useEffect(() => {
@@ -1210,7 +1196,6 @@ export default function App() {
         setActiveFile(await checkAndMigrate('reversx_active_file', false, ''));
         setOpenFiles(await checkAndMigrate('reversx_open_files', true, []));
         setAppThemeName(await checkAndMigrate('reversx_app_theme', false, 'VS Code Dark'));
-        setIsDesktopMode(await checkAndMigrate('reversx_desktop_mode', false, false));
         setIconThemeName(await checkAndMigrate('reversx_icon_theme', false, 'VS code'));
         setFileIconSize(await checkAndMigrate('reversx_file_icon_size', false, 16));
         setAppFontName(await checkAndMigrate('reversx_app_font', false, 'Inter'));
@@ -2094,8 +2079,7 @@ export default function App() {
 
   useEffect(() => {
     db.setItem('reversx_mobile_view', mobileView);
-    idbSet('reversx_desktop_mode', isDesktopMode);
-  }, [mobileView, isDesktopMode]);
+  }, [mobileView]);
 
   useEffect(() => {
     if (userName) {
@@ -2113,36 +2097,30 @@ export default function App() {
     // Apply app theme variables
     const theme = APP_THEMES[appThemeName] || APP_THEMES['VS Code Dark'];
     const root = document.documentElement;
-    if (root && root.style) {
-      root.style.setProperty('--color-background', theme.background);
-      root.style.setProperty('--color-foreground', theme.foreground);
-      root.style.setProperty('--color-accent', theme.accent);
-      root.style.setProperty('--color-accent-foreground', theme.accentForeground || '#ffffff');
-      root.style.setProperty('--color-sidebar', theme.sidebar);
-      root.style.setProperty('--color-border', theme.border);
-      root.style.setProperty('--color-muted', theme.muted);
-      root.style.setProperty('--color-subtle', theme.subtle);
-      root.style.setProperty('--color-foreground-muted', theme.muted);
-      root.style.setProperty('--color-foreground-subtle', theme.subtle);
-      
-      // Also update accent dim
-      const accentDim = theme.accent.startsWith('#') ? `${theme.accent}33` : 'rgba(255, 255, 255, 0.1)';
-      root.style.setProperty('--color-accent-dim', accentDim);
-    }
+    root.style.setProperty('--color-background', theme.background);
+    root.style.setProperty('--color-foreground', theme.foreground);
+    root.style.setProperty('--color-accent', theme.accent);
+    root.style.setProperty('--color-accent-foreground', theme.accentForeground || '#ffffff');
+    root.style.setProperty('--color-sidebar', theme.sidebar);
+    root.style.setProperty('--color-border', theme.border);
+    root.style.setProperty('--color-muted', theme.muted);
+    root.style.setProperty('--color-subtle', theme.subtle);
+    root.style.setProperty('--color-foreground-muted', theme.muted);
+    root.style.setProperty('--color-foreground-subtle', theme.subtle);
+    
+    // Also update accent dim
+    const accentDim = theme.accent.startsWith('#') ? `${theme.accent}33` : 'rgba(255, 255, 255, 0.1)';
+    root.style.setProperty('--color-accent-dim', accentDim);
   }, [appThemeName]);
 
   useEffect(() => {
     const root = document.documentElement;
-    if (root && root.style) {
-      root.style.setProperty('--editor-line-height', editorLineHeight.toString());
-    }
+    root.style.setProperty('--editor-line-height', editorLineHeight.toString());
   }, [editorLineHeight]);
 
   useEffect(() => {
     const root = document.documentElement;
-    if (root && root.style) {
-      root.style.setProperty('--editor-font-size', `${editorFontSize}px`);
-    }
+    root.style.setProperty('--editor-font-size', `${editorFontSize}px`);
   }, [editorFontSize]);
 
   useEffect(() => {
@@ -2163,16 +2141,14 @@ export default function App() {
       
       if (newWidth > minWidth && newWidth < maxWidth) {
         setSidebarWidth(newWidth);
-        document.documentElement?.style?.setProperty('--sidebar-width', `${newWidth}px`);
+        document.documentElement.style.setProperty('--sidebar-width', `${newWidth}px`);
       }
     }
   }, [isResizing]);
 
   const stopResizing = useCallback(() => {
     setIsResizing(false);
-    if (document.body) {
-      document.body.style.cursor = 'default';
-    }
+    document.body.style.cursor = 'default';
   }, []);
 
   const startResizing = useCallback((e: React.MouseEvent | React.TouchEvent) => {
@@ -2183,9 +2159,7 @@ export default function App() {
       e.preventDefault();
     }
     setIsResizing(true);
-    if (document.body) {
-      document.body.style.cursor = 'col-resize';
-    }
+    document.body.style.cursor = 'col-resize';
   }, []);
 
   const resizeExplorer = useCallback((e: MouseEvent | TouchEvent) => {
@@ -2216,9 +2190,7 @@ export default function App() {
 
   const stopResizingEditorSplit = useCallback(() => {
     setIsResizingEditorSplit(false);
-    if (document.body) {
-      document.body.style.cursor = 'default';
-    }
+    document.body.style.cursor = 'default';
   }, []);
 
   const startResizingEditorSplit = useCallback((e: React.MouseEvent | React.TouchEvent) => {
@@ -2226,16 +2198,12 @@ export default function App() {
       e.preventDefault();
     }
     setIsResizingEditorSplit(true);
-    if (document.body) {
-      document.body.style.cursor = 'col-resize';
-    }
+    document.body.style.cursor = 'col-resize';
   }, []);
 
   const stopResizingExplorer = useCallback(() => {
     setIsResizingExplorer(false);
-    if (document.body) {
-      document.body.style.cursor = 'default';
-    }
+    document.body.style.cursor = 'default';
   }, []);
 
   const startResizingExplorer = useCallback((e: React.MouseEvent | React.TouchEvent) => {
@@ -2243,9 +2211,7 @@ export default function App() {
       e.preventDefault();
     }
     setIsResizingExplorer(true);
-    if (document.body) {
-      document.body.style.cursor = 'col-resize';
-    }
+    document.body.style.cursor = 'col-resize';
   }, []);
 
   useEffect(() => {
@@ -4677,9 +4643,9 @@ export default function App() {
 
       {/* Sidebar Content */}
       <div 
-        style={isDesktopMode ? { width: isZenMode ? '0px' : (isSidebarMinimized ? '0px' : sidebarWidth), height: '100%' } : { width: isZenMode ? '0px' : (isSidebarMinimized ? '0px' : (mobileView === 'chat' ? '100%' : '0px')), height: isZenMode ? '0px' : (mobileView === 'chat' ? '100%' : '0px') }}
+        style={{ width: isZenMode ? '0px' : (isSidebarMinimized ? '0px' : (mobileView === 'chat' ? '100%' : '0px')), height: isZenMode ? '0px' : (mobileView === 'chat' ? '100%' : '0px') }}
         className={`
-          ${isDesktopMode ? (isZenMode ? 'hidden' : 'flex') : (mobileView === 'chat' && !isZenMode ? 'flex flex-1' : 'hidden')} 
+          ${mobileView === 'chat' && !isZenMode ? 'flex flex-1' : 'hidden'} 
           border-r border-border bg-sidebar flex-col overflow-hidden transition-all duration-300 ease-in-out relative
         `}
       >
@@ -4902,7 +4868,7 @@ export default function App() {
 
       {/* Main Content Area */}
       <div className={`
-        ${isDesktopMode ? 'flex flex-1' : ((mobileView !== 'chat' || isZenMode) ? 'flex flex-1' : 'hidden')} 
+        ${(mobileView !== 'chat' || isZenMode) ? 'flex flex-1' : 'hidden'} 
         flex-col bg-background overflow-hidden relative
       `}>
         {isSidebarMinimized && (
@@ -4927,7 +4893,7 @@ export default function App() {
                 className={`flex flex-col bg-[#252526] border-r border-[#2b2b2b] transition-all duration-300 ease-in-out overflow-hidden
                   ${isExplorerOpen && !isEditorFullscreen && !isZenMode ? (isLandscape ? 'w-[200px]' : 'w-[260px]') + ' opacity-100 pointer-events-auto' : 'w-0 opacity-0 pointer-events-none'}
                   ${isDragging ? 'ring-2 ring-accent ring-inset bg-accent/5' : ''}
-                  ${isDesktopMode ? 'relative z-10' : 'fixed inset-y-0 left-0 z-[60] md:relative md:z-10'}
+                  fixed inset-y-0 left-0 z-[60] md:relative md:z-10
                 `}
                 style={{ fontFamily: "'Cabin', sans-serif" }}
               >
@@ -5562,6 +5528,8 @@ export default function App() {
                           setIsZenMode={setIsZenMode}
                           bookmarks={bookmarks}
                           onToggleBookmark={handleToggleBookmark}
+                          shortcutPresetName={shortcutPresetName}
+                          customSymbolsStr={customSymbolsStr}
                         />
                       </div>
                       
@@ -5614,7 +5582,7 @@ export default function App() {
               </div>
             </div>
           ) : (
-            <div className={`h-full w-full relative ${isDesktopMode ? 'pt-0' : 'md:pt-0 pt-10'} flex flex-col items-center transition-all duration-500 ${previewDevice !== 'desktop' ? 'bg-[#121212] p-8 overflow-auto' : 'bg-white'} custom-scrollbar`}>
+            <div className={`h-full w-full relative md:pt-0 pt-10 flex flex-col items-center transition-all duration-500 ${previewDevice !== 'desktop' ? 'bg-[#121212] p-8 overflow-auto' : 'bg-white'} custom-scrollbar`}>
               <div className={`relative transition-all duration-500 shadow-2xl overflow-hidden shrink-0 flex flex-col items-center ${previewDevice === 'desktop' ? '' : 'my-auto'}`} style={{
                 width: previewDevice === 'mobile' ? '375px' : previewDevice === 'laptop' ? '1024px' : '100%',
                 height: previewDevice === 'mobile' ? '667px' : previewDevice === 'laptop' ? '640px' : '100%',
@@ -5886,8 +5854,10 @@ export default function App() {
         handleInstallClick={handleInstallClick}
         appFontName={appFontName}
         setAppFontName={setAppFontName}
-        isDesktopMode={isDesktopMode}
-        setIsDesktopMode={setIsDesktopMode}
+        shortcutPresetName={shortcutPresetName}
+        setShortcutPresetName={setShortcutPresetName}
+        customSymbolsStr={customSymbolsStr}
+        setCustomSymbolsStr={setCustomSymbolsStr}
       />
 
       <GithubExportModal 

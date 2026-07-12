@@ -481,6 +481,7 @@ export const getCodeMirrorExtensions = (language: string, bookmarkedLines: numbe
       spellcheck: "false",
       autocapitalize: "off",
       autocorrect: "off",
+      autocomplete: "off",
       translate: "no"
     }),
     foldGutter(),

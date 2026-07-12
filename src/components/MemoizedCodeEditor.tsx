@@ -4,12 +4,17 @@ import {
   ChevronRight, Sparkles, Key, Bookmark,
   Scissors, Copy, Clipboard, CheckSquare
 } from 'lucide-react';
-import { keymap } from '@codemirror/view';
+import { keymap, EditorView } from '@codemirror/view';
+import { undo, redo } from '@codemirror/commands';
+import { Capacitor, registerPlugin } from '@capacitor/core';
+import { Clipboard as NativeClipboard } from '@capacitor/clipboard';
+
+const KeyboardModifier = registerPlugin<any>('KeyboardModifier');
 
 import { useIcons, Codicon } from '../lib/icons';
 import { useFileIconSize, Bookmark as ProjectBookmark } from '../types';
 import { CoreEditor } from './CoreEditor';
-import { MobileKeyboardToolbar } from './MobileKeyboardToolbar';
+import { MobileKeyboardToolbar, SHORTCUT_PRESETS } from './MobileKeyboardToolbar';
 import { 
   VSCodeDefaultFileIcon, 
   getOfficialIcon 
@@ -72,6 +77,8 @@ interface MemoizedCodeEditorProps {
   setIsZenMode?: (val: boolean) => void;
   bookmarks?: ProjectBookmark[];
   onToggleBookmark?: (filename: string, lineNumber: number, lineContent: string) => void;
+  shortcutPresetName?: string;
+  customSymbolsStr?: string;
 }
 
 export const MemoizedCodeEditor = React.memo(({ 
@@ -123,7 +130,9 @@ export const MemoizedCodeEditor = React.memo(({
   isZenMode = false,
   setIsZenMode,
   bookmarks = [],
-  onToggleBookmark
+  onToggleBookmark,
+  shortcutPresetName = 'VS Code Default',
+  customSymbolsStr = ''
 }: MemoizedCodeEditorProps) => {
   const [localValue, setLocalValue] = useState(code);
   const [currentLineNumber, setCurrentLineNumber] = useState(1);
@@ -137,9 +146,29 @@ export const MemoizedCodeEditor = React.memo(({
   const [inlineAILoading, setInlineAILoading] = useState(false);
   const [isCtrlActive, setIsCtrlActive] = useState(false);
   const [isShiftActive, setIsShiftActive] = useState(false);
+  const [isAltActive, setIsAltActive] = useState(false);
+
+  const symbols = useMemo(() => {
+    if (shortcutPresetName === 'Custom Layout') {
+      return (customSymbolsStr || '')
+        .split(/[,\s]+/)
+        .map(s => s.trim())
+        .filter(s => s.length > 0);
+    }
+    const preset = SHORTCUT_PRESETS.find(p => p.name === shortcutPresetName);
+    return preset ? preset.symbols : SHORTCUT_PRESETS[0].symbols;
+  }, [shortcutPresetName, customSymbolsStr]);
   const [isMobileRow1Collapsed, setIsMobileRow1Collapsed] = useState(false);
   const [isMobileRow2Collapsed, setIsMobileRow2Collapsed] = useState(false);
   const [isKeyboardToolbarHidden, setIsKeyboardToolbarHidden] = useState(false);
+
+  useEffect(() => {
+    if (Capacitor.isNativePlatform()) {
+      KeyboardModifier.setModifiers({ ctrl: isCtrlActive, shift: isShiftActive, alt: isAltActive }).catch((err: any) => {
+        console.error("Failed to sync modifiers to native Android:", err);
+      });
+    }
+  }, [isCtrlActive, isShiftActive, isAltActive]);
   const insertText = useCallback((text: string) => {
     if (viewRef.current) {
       const view = viewRef.current;
@@ -216,9 +245,15 @@ export const MemoizedCodeEditor = React.memo(({
     const selection = view.state.selection.main;
     const selectedText = view.state.doc.sliceString(selection.from, selection.to);
     if (selectedText) {
-      navigator.clipboard.writeText(selectedText).catch(err => {
-        console.error("Clipboard copy failed:", err);
-      });
+      if (Capacitor.isNativePlatform()) {
+        NativeClipboard.write({ string: selectedText }).catch(err => {
+          console.error("Native Clipboard copy failed:", err);
+        });
+      } else {
+        navigator.clipboard.writeText(selectedText).catch(err => {
+          console.error("Clipboard copy failed:", err);
+        });
+      }
       view.focus();
     }
     setFloatingToolbar(null);
@@ -227,7 +262,16 @@ export const MemoizedCodeEditor = React.memo(({
   const handlePaste = useCallback(() => {
     if (!viewRef.current) return;
     setFloatingToolbar(null);
-    if (navigator.clipboard && navigator.clipboard.readText) {
+    if (Capacitor.isNativePlatform()) {
+      NativeClipboard.read().then(({ value }) => {
+        if (value) {
+          insertText(value);
+        }
+      }).catch(err => {
+        console.error("Native Clipboard paste failed:", err);
+        setShowPasteModal(true);
+      });
+    } else if (navigator.clipboard && navigator.clipboard.readText) {
       navigator.clipboard.readText().then(text => {
         insertText(text);
       }).catch(err => {
@@ -247,6 +291,65 @@ export const MemoizedCodeEditor = React.memo(({
     view.focus();
     setFloatingToolbar(null);
   }, []);
+
+  const executeVirtualShortcut = useCallback((key: string) => {
+    if (!viewRef.current) return;
+    const view = viewRef.current;
+
+    switch (key.toLowerCase()) {
+      case 'v':
+        handlePaste();
+        break;
+      case 'c': {
+        const selectedText = view.state.sliceDoc(view.state.selection.main.from, view.state.selection.main.to);
+        if (selectedText) {
+          if (Capacitor.isNativePlatform()) {
+            NativeClipboard.write({ string: selectedText }).catch(() => {});
+          } else {
+            navigator.clipboard.writeText(selectedText).catch(() => {});
+          }
+        }
+        break;
+      }
+      case 'x': {
+        const { selection } = view.state;
+        const selectedText = view.state.sliceDoc(selection.main.from, selection.main.to);
+        if (selectedText) {
+          const proceedCut = () => {
+            view.dispatch({
+              changes: { from: selection.main.from, to: selection.main.to, insert: '' },
+              selection: { anchor: selection.main.from }
+            });
+          };
+          if (Capacitor.isNativePlatform()) {
+            NativeClipboard.write({ string: selectedText }).then(proceedCut).catch(() => {});
+          } else {
+            navigator.clipboard.writeText(selectedText).then(proceedCut).catch(() => {});
+          }
+        }
+        break;
+      }
+      case 'z':
+        undo(view);
+        break;
+      case 'y':
+        redo(view);
+        break;
+      case 'a':
+        view.dispatch({ selection: { anchor: 0, head: view.state.doc.length } });
+        break;
+      case 'f':
+        import('@codemirror/search').then(({ openSearchPanel }) => openSearchPanel(view));
+        break;
+      default:
+        break;
+    }
+
+    // Clear active modifier states after the action is processed
+    setIsCtrlActive(false);
+    setIsShiftActive(false);
+    setIsAltActive(false);
+  }, [handlePaste]);
 
   useEffect(() => {
     const handleGlobalClick = () => {
@@ -385,17 +488,36 @@ export const MemoizedCodeEditor = React.memo(({
       case 'search': 
         import('@codemirror/search').then(({ openSearchPanel }) => openSearchPanel(view));
         break;
-      case 'left': 
-        view.dispatch({ selection: { anchor: Math.max(0, view.state.selection.main.head - 1) } });
+      case 'left': {
+        const head = view.state.selection.main.head;
+        const nextHead = Math.max(0, head - 1);
+        if (isShiftActive) {
+          view.dispatch({ selection: { anchor: view.state.selection.main.anchor, head: nextHead } });
+        } else {
+          view.dispatch({ selection: { anchor: nextHead } });
+        }
         break;
-      case 'right': 
-        view.dispatch({ selection: { anchor: Math.min(view.state.doc.length, view.state.selection.main.head + 1) } });
+      }
+      case 'right': {
+        const head = view.state.selection.main.head;
+        const nextHead = Math.min(view.state.doc.length, head + 1);
+        if (isShiftActive) {
+          view.dispatch({ selection: { anchor: view.state.selection.main.anchor, head: nextHead } });
+        } else {
+          view.dispatch({ selection: { anchor: nextHead } });
+        }
         break;
+      }
       case 'up': {
         const lineU = view.state.doc.lineAt(view.state.selection.main.head);
         if (lineU.number > 1) {
           const prevLine = view.state.doc.line(lineU.number - 1);
-          view.dispatch({ selection: { anchor: prevLine.from + Math.min(prevLine.length, view.state.selection.main.head - lineU.from) } });
+          const nextHead = prevLine.from + Math.min(prevLine.length, view.state.selection.main.head - lineU.from);
+          if (isShiftActive) {
+            view.dispatch({ selection: { anchor: view.state.selection.main.anchor, head: nextHead } });
+          } else {
+            view.dispatch({ selection: { anchor: nextHead } });
+          }
         }
         break;
       }
@@ -403,7 +525,12 @@ export const MemoizedCodeEditor = React.memo(({
         const lineD = view.state.doc.lineAt(view.state.selection.main.head);
         if (lineD.number < view.state.doc.lines) {
           const nextLine = view.state.doc.line(lineD.number + 1);
-          view.dispatch({ selection: { anchor: nextLine.from + Math.min(nextLine.length, view.state.selection.main.head - lineD.from) } });
+          const nextHead = nextLine.from + Math.min(nextLine.length, view.state.selection.main.head - lineD.from);
+          if (isShiftActive) {
+            view.dispatch({ selection: { anchor: view.state.selection.main.anchor, head: nextHead } });
+          } else {
+            view.dispatch({ selection: { anchor: nextHead } });
+          }
         }
         break;
       }
@@ -694,8 +821,47 @@ Instructions: Modify the code according to the task. Return ONLY the modified co
       { key: 'Mod-Alt-s', run: () => { onSetMobileView?.('chat'); return true; } },
       { key: 'Ctrl-Alt-b', run: () => { toggleCurrentLineBookmark(); return true; } },
     ]);
-    return [...base, shortcuts];
-  }, [language, activeFileBookmarks, onShowQuickOpen, onShowCommandPalette, onSaveToLocal, onSaveSelectedAsSnippet, onSetActiveTab, onSetMobileView, toggleCurrentLineBookmark]);
+
+    const virtualShortcutsHandler = EditorView.domEventHandlers({
+      keydown: (event, view) => {
+        if (isCtrlActive) {
+          const key = event.key.toLowerCase();
+          if (['v', 'c', 'x', 'z', 'y', 'a', 'f'].includes(key)) {
+            event.preventDefault();
+            event.stopPropagation();
+            executeVirtualShortcut(key);
+            return true;
+          }
+        }
+        return false;
+      },
+      beforeinput: (event: any, view) => {
+        if (isCtrlActive && event.data) {
+          const key = event.data.toLowerCase();
+          if (['v', 'c', 'x', 'z', 'y', 'a', 'f'].includes(key)) {
+            event.preventDefault();
+            event.stopPropagation();
+            executeVirtualShortcut(key);
+            return true;
+          }
+        }
+        return false;
+      }
+    });
+
+    const mobileInputHandler = EditorView.inputHandler.of((view, from, to, text) => {
+      if (isCtrlActive && text && text.length === 1) {
+        const char = text.toLowerCase();
+        if (['v', 'c', 'x', 'z', 'y', 'a', 'f'].includes(char)) {
+          executeVirtualShortcut(char);
+          return true; // handled, don't insert the character
+        }
+      }
+      return false;
+    });
+
+    return [...base, shortcuts, virtualShortcutsHandler, mobileInputHandler];
+  }, [language, activeFileBookmarks, onShowQuickOpen, onShowCommandPalette, onSaveToLocal, onSaveSelectedAsSnippet, onSetActiveTab, onSetMobileView, toggleCurrentLineBookmark, isCtrlActive, isShiftActive, isAltActive, executeVirtualShortcut]);
 
   return (
     <div className="h-full w-full flex flex-col bg-background">
@@ -1023,6 +1189,13 @@ Instructions: Modify the code according to the task. Return ONLY the modified co
           onHide={() => setIsKeyboardToolbarHidden(true)}
           onShowQuickOpen={onShowQuickOpen}
           onShowCommandPalette={onShowCommandPalette}
+          symbols={symbols}
+          isCtrlActive={isCtrlActive}
+          isShiftActive={isShiftActive}
+          isAltActive={isAltActive}
+          onToggleCtrl={() => setIsCtrlActive(prev => !prev)}
+          onToggleShift={() => setIsShiftActive(prev => !prev)}
+          onToggleAlt={() => setIsAltActive(prev => !prev)}
         />
       )}
 
@@ -1056,6 +1229,10 @@ Instructions: Modify the code according to the task. Return ONLY the modified co
                 autoFocus
                 value={pasteValue}
                 onChange={(e) => setPasteValue(e.target.value)}
+                autoComplete="off"
+                autoCorrect="off"
+                autoCapitalize="off"
+                spellCheck={false}
                 className="w-full h-40 bg-background border border-border rounded-none p-3 text-sm font-roboto text-foreground focus:outline-none focus:border-accent resize-none mb-4"
                 placeholder="Paste your code here..."
               />

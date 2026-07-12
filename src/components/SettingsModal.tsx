@@ -3,6 +3,7 @@ import { X, Minus, Plus, CheckCircle2, ChevronDown, ChevronUp } from 'lucide-rea
 import { APP_THEMES } from '../App';
 import { ICON_THEMES, Codicon } from '../lib/icons';
 import { SYNTAX_THEMES } from '../utils/editorUtils';
+import { SHORTCUT_PRESETS } from './MobileKeyboardToolbar';
 
 interface SettingsModalProps {
   isOpen: boolean;
@@ -22,11 +23,11 @@ interface SettingsModalProps {
   isInstallable: boolean;
   handleInstallClick: () => void;
   appFontName: string;
-  setAppFontName,
-  isDesktopMode,
-  setIsDesktopMode: (font: string) => void;
-  isDesktopMode: boolean;
-  setIsDesktopMode: (mode: boolean) => void;
+  setAppFontName: (font: string) => void;
+  shortcutPresetName: string;
+  setShortcutPresetName: (preset: string) => void;
+  customSymbolsStr: string;
+  setCustomSymbolsStr: (symbols: string) => void;
 }
 
 const FONT_OPTIONS_MAP: Record<string, string> = {
@@ -71,10 +72,12 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
   handleInstallClick,
   appFontName,
   setAppFontName,
-  isDesktopMode,
-  setIsDesktopMode,
+  shortcutPresetName,
+  setShortcutPresetName,
+  customSymbolsStr,
+  setCustomSymbolsStr,
 }) => {
-  const [settingsCategory, setSettingsCategory] = useState<'appearance' | 'editor' | 'application' | 'syntax'>('appearance');
+  const [settingsCategory, setSettingsCategory] = useState<'appearance' | 'editor' | 'application' | 'syntax' | 'shortcuts'>('appearance');
   const [isFontDropdownOpen, setIsFontDropdownOpen] = useState(false);
 
   return (
@@ -104,13 +107,14 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
               {/* Menu Sidebar */}
               <div className="w-40 border-r border-white/[0.05] py-2 flex-shrink-0 bg-background relative">
                 <div className="px-4 py-2 mb-2 flex items-center justify-between">
-                  <span className="text-[10px] font-bold text-[#858585] uppercase tracking-wider">Settings</span>
+                  <span className="text-[10px] font-bold text-[#858585] tracking-wider">Settings</span>
                 </div>
                 <div className="space-y-0.5">
                   {[
                     { id: 'appearance', label: 'Appearance' },
                     { id: 'editor', label: 'Text Editor' },
                     { id: 'syntax', label: 'Syntax' },
+                    { id: 'shortcuts', label: 'Shortcuts Row' },
                     { id: 'application', label: 'Application' }
                   ].map(cat => (
                     <button 
@@ -128,7 +132,7 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
               <div className="flex-1 overflow-y-auto custom-scrollbar bg-sidebar p-6">
                 {settingsCategory === 'appearance' && (
                   <div className="space-y-6 animate-in fade-in slide-in-from-right-1 duration-200">
-                    <h3 className="text-xs font-semibold text-[#007acc] uppercase tracking-wider mb-4 border-b border-white/10 pb-1">Appearance</h3>
+                    <h3 className="text-xs font-semibold text-[#007acc] tracking-wider mb-4 border-b border-white/10 pb-1">Appearance</h3>
                     
                     <div>
                       <label className="block text-[12px] text-[#cccccc] mb-1.5 font-medium">App Theme</label>
@@ -184,9 +188,7 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
                               <button
                                 key={fontName}
                                 onClick={() => {
-                                  setAppFontName,
-  isDesktopMode,
-  setIsDesktopMode(fontName);
+                                  setAppFontName(fontName);
                                   setIsFontDropdownOpen(false);
                                 }}
                                 className={`w-full px-3 py-2 text-left text-[11px] transition-colors hover:bg-[#007acc] hover:text-white flex items-center justify-between ${
@@ -207,7 +209,7 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
 
                 {settingsCategory === 'editor' && (
                   <div className="space-y-6 animate-in fade-in slide-in-from-right-1 duration-200">
-                    <h3 className="text-xs font-semibold text-[#007acc] uppercase tracking-wider mb-4 border-b border-white/10 pb-1">Text Editor</h3>
+                    <h3 className="text-xs font-semibold text-[#007acc] tracking-wider mb-4 border-b border-white/10 pb-1">Text Editor</h3>
                     
                     <div>
                       <label className="block text-[12px] text-[#cccccc] mb-1.5 font-medium">Font Family</label>
@@ -294,7 +296,7 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
 
                 {settingsCategory === 'syntax' && (
                   <div className="space-y-6 animate-in fade-in slide-in-from-right-1 duration-200">
-                    <h3 className="text-xs font-semibold text-[#007acc] uppercase tracking-wider mb-4 border-b border-white/10 pb-1">Syntax Highlighter</h3>
+                    <h3 className="text-xs font-semibold text-[#007acc] tracking-wider mb-4 border-b border-white/10 pb-1">Syntax Highlighter</h3>
                     
                     <div className="grid grid-cols-2 gap-2">
                       {Object.keys(SYNTAX_THEMES).map((themeName) => (
@@ -317,9 +319,52 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
                   </div>
                 )}
 
+                 {settingsCategory === 'shortcuts' && (
+                  <div className="space-y-6 animate-in fade-in slide-in-from-right-1 duration-200">
+                    <h3 className="text-xs font-semibold text-[#007acc] tracking-wider mb-4 border-b border-white/10 pb-1">Shortcuts Row Layout</h3>
+                    
+                    <div>
+                      <label className="block text-[12px] text-[#cccccc] mb-1.5 font-medium">Layout Design</label>
+                      <div className="grid grid-cols-1 gap-1.5 max-h-56 overflow-y-auto pr-1">
+                        {[
+                          ...SHORTCUT_PRESETS,
+                          { name: 'Custom Layout', description: 'Create your own layout design below' }
+                        ].map((preset) => (
+                          <button
+                            key={preset.name}
+                            onClick={() => setShortcutPresetName(preset.name)}
+                            className={`px-3 py-2 text-[11px] text-left transition-all border rounded-[2px] flex flex-col gap-0.5 ${
+                              shortcutPresetName === preset.name 
+                                ? 'bg-[#37373d] text-white border-[#007acc]' 
+                                : 'text-[#cccccc] hover:bg-[#2a2d2e] border-transparent'
+                            }`}
+                          >
+                            <span className="font-semibold">{preset.name}</span>
+                            <span className="text-[10px] text-[#858585]">{preset.description}</span>
+                          </button>
+                        ))}
+                      </div>
+                    </div>
+
+                    {shortcutPresetName === 'Custom Layout' && (
+                      <div className="space-y-2 animate-in fade-in duration-200">
+                        <label className="block text-[12px] text-[#cccccc] font-medium">Custom Symbols</label>
+                        <p className="text-[10px] text-[#858585]">Enter your favorite symbols separated by spaces or commas.</p>
+                        <input
+                          type="text"
+                          value={customSymbolsStr}
+                          onChange={(e) => setCustomSymbolsStr(e.target.value)}
+                          className="w-full h-8 px-3 bg-[#3c3c3c] border border-white/10 text-white text-[11px] hover:bg-[#4a4a4a] transition-all focus:outline-none focus:border-[#007acc] font-mono"
+                          placeholder="e.g. <, >, /, {, }, ;, (, )"
+                        />
+                      </div>
+                    )}
+                  </div>
+                )}
+
                 {settingsCategory === 'application' && (
                   <div className="space-y-6 animate-in fade-in slide-in-from-right-1 duration-200">
-                    <h3 className="text-xs font-semibold text-[#007acc] uppercase tracking-wider mb-4 border-b border-white/10 pb-1">Application</h3>
+                    <h3 className="text-xs font-semibold text-[#007acc] tracking-wider mb-4 border-b border-white/10 pb-1">Application</h3>
                     
                     {isInstallable && (
                       <div className="bg-background p-4 rounded-[2px] border border-white/5">
@@ -333,19 +378,6 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
                         </button>
                       </div>
                     )}
-
-                    <div className="bg-background p-4 rounded-[2px] border border-white/5 flex items-center justify-between">
-                      <div>
-                        <h4 className="text-[12px] font-medium text-white mb-1">Desktop Mode</h4>
-                        <p className="text-[11px] text-[#858585]">Enable resizable panels like VS Code (like tablet/laptop view).</p>
-                      </div>
-                      <button
-                        onClick={() => setIsDesktopMode(!isDesktopMode)}
-                        className={`relative w-8 h-4 rounded-full transition-colors ${isDesktopMode ? 'bg-[#007acc]' : 'bg-[#3e3e42]'}`}
-                      >
-                        <div className={`absolute top-0.5 left-0.5 w-3 h-3 bg-white rounded-full transition-transform ${isDesktopMode ? 'translate-x-4' : 'translate-x-0'}`} />
-                      </button>
-                    </div>
 
                     <div className="text-[11px] text-[#858585] space-y-1">
                       <p>Version: 1.0.0 (Preview)</p>
