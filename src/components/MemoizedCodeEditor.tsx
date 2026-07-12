@@ -148,6 +148,14 @@ export const MemoizedCodeEditor = React.memo(({
   const [isCtrlActive, setIsCtrlActive] = useState(false);
   const [isShiftActive, setIsShiftActive] = useState(false);
   const [isAltActive, setIsAltActive] = useState(false);
+  const [wordWrap, setWordWrap] = useState(() => {
+    const saved = localStorage.getItem('reversx_wordwrap');
+    return saved !== 'false';
+  });
+
+  useEffect(() => {
+    localStorage.setItem('reversx_wordwrap', wordWrap ? 'true' : 'false');
+  }, [wordWrap]);
 
   const symbols = useMemo(() => {
     if (shortcutPresetName === 'Custom Layout') {
@@ -812,7 +820,10 @@ Instructions: Modify the code according to the task. Return ONLY the modified co
   }, [bookmarks, filename]);
 
   const editorExtensions = useMemo(() => {
-    const base = getCodeMirrorExtensions(language, activeFileBookmarks);
+    let base = getCodeMirrorExtensions(language, activeFileBookmarks);
+    if (!wordWrap) {
+      base = base.filter(ext => ext !== EditorView.lineWrapping);
+    }
     const shortcuts = keymap.of([
       { key: 'Mod-p', run: () => { onShowQuickOpen?.(); return true; } },
       { key: 'Mod-Shift-p', run: () => { onShowCommandPalette?.(); return true; } },
@@ -862,7 +873,7 @@ Instructions: Modify the code according to the task. Return ONLY the modified co
     });
 
     return [...base, shortcuts, virtualShortcutsHandler, mobileInputHandler];
-  }, [language, activeFileBookmarks, onShowQuickOpen, onShowCommandPalette, onSaveToLocal, onSaveSelectedAsSnippet, onSetActiveTab, onSetMobileView, toggleCurrentLineBookmark, isCtrlActive, isShiftActive, isAltActive, executeVirtualShortcut]);
+  }, [language, activeFileBookmarks, wordWrap, onShowQuickOpen, onShowCommandPalette, onSaveToLocal, onSaveSelectedAsSnippet, onSetActiveTab, onSetMobileView, toggleCurrentLineBookmark, isCtrlActive, isShiftActive, isAltActive, executeVirtualShortcut]);
 
   return (
     <div className="h-full w-full flex flex-col bg-background">
@@ -982,6 +993,12 @@ Instructions: Modify the code according to the task. Return ONLY the modified co
                     className="px-3 py-2 text-[#cccccc] text-[13px] flex items-center rounded cursor-pointer whitespace-nowrap transition-all duration-[50ms] hover:bg-[#094771] hover:text-white active:bg-[#094771]/70 outline-none"
                   >
                     Show Preview
+                  </div>
+                  <div 
+                    onClick={() => { setWordWrap(!wordWrap); setShowMoreMenu(false); }}
+                    className="px-3 py-2 text-[#cccccc] text-[13px] flex items-center rounded cursor-pointer whitespace-nowrap transition-all duration-[50ms] hover:bg-[#094771] hover:text-white active:bg-[#094771]/70 outline-none"
+                  >
+                    Wordwarp - On/off
                   </div>
                 </div>
               </>

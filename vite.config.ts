@@ -50,20 +50,17 @@ export default defineConfig(({mode}) => {
         '@codemirror/language',
         '@codemirror/commands',
         '@codemirror/autocomplete',
-        '@emmetio/codemirror6-plugin'
-      ],
-      exclude: [
-        'prettier',
+        '@emmetio/codemirror6-plugin',
+        'prettier/standalone',
         'prettier/plugins/babel',
         'prettier/plugins/estree',
         'prettier/plugins/html',
         'prettier/plugins/postcss',
         'prettier/plugins/markdown',
         'prettier/plugins/yaml',
-        'prettier/plugins/graphql',
-        'prettier/plugins/acorn',
-        'prettier-plugin-java',
-        '@prettier/plugin-python',
+        'prettier/plugins/graphql'
+      ],
+      exclude: [
         '@wasm-fmt/clang-format',
         '@wasm-fmt/gofmt',
         '@wasm-fmt/shfmt',
