@@ -1,4 +1,7 @@
 import React from 'react';
+import { getIconForFile, getIconForFolder, getIconForOpenFolder } from 'vscode-icons-js';
+
+const CDN_BASE_URL = 'https://cdn.jsdelivr.net/gh/vscode-icons/vscode-icons@master/icons/';
 
 export const VSCodeDefaultFileIcon = ({ className = "shrink-0", size = 16 }: { className?: string, size?: number }) => (
   <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 32" className={className} style={{ width: size, height: size }}>
@@ -19,49 +22,19 @@ export const VSCodeFolderOpenIcon = ({ className = "shrink-0", size = 16 }: { cl
   </svg>
 );
 
-export const getOfficialIcon = (ext: string) => {
-  const icons: Record<string, string> = {
-    html: 'https://cdn.jsdelivr.net/gh/PKief/vscode-material-icon-theme@master/icons/html.svg',
-    css: 'https://cdn.jsdelivr.net/gh/PKief/vscode-material-icon-theme@master/icons/css.svg',
-    sass: 'https://cdn.jsdelivr.net/gh/PKief/vscode-material-icon-theme@master/icons/sass.svg',
-    scss: 'https://cdn.jsdelivr.net/gh/PKief/vscode-material-icon-theme@master/icons/sass.svg',
-    js: 'https://cdn.jsdelivr.net/gh/PKief/vscode-material-icon-theme@master/icons/javascript.svg',
-    jsx: 'https://cdn.jsdelivr.net/gh/PKief/vscode-material-icon-theme@master/icons/react.svg',
-    ts: 'https://cdn.jsdelivr.net/gh/PKief/vscode-material-icon-theme@master/icons/typescript.svg',
-    tsx: 'https://cdn.jsdelivr.net/gh/PKief/vscode-material-icon-theme@master/icons/react.svg',
-    py: 'https://cdn.jsdelivr.net/gh/PKief/vscode-material-icon-theme@master/icons/python.svg',
-    java: 'https://cdn.jsdelivr.net/gh/PKief/vscode-material-icon-theme@master/icons/java.svg',
-    cpp: 'https://cdn.jsdelivr.net/gh/PKief/vscode-material-icon-theme@master/icons/cpp.svg',
-    c: 'https://cdn.jsdelivr.net/gh/PKief/vscode-material-icon-theme@master/icons/c.svg',
-    h: 'https://cdn.jsdelivr.net/gh/PKief/vscode-material-icon-theme@master/icons/h.svg',
-    md: 'https://cdn.jsdelivr.net/gh/PKief/vscode-material-icon-theme@master/icons/markdown.svg',
-    json: 'https://cdn.jsdelivr.net/gh/PKief/vscode-material-icon-theme@master/icons/json.svg',
-    svg: 'https://cdn.jsdelivr.net/gh/PKief/vscode-material-icon-theme@master/icons/svg.svg',
-    png: 'https://cdn.jsdelivr.net/gh/PKief/vscode-material-icon-theme@master/icons/image.svg',
-    jpg: 'https://cdn.jsdelivr.net/gh/PKief/vscode-material-icon-theme@master/icons/image.svg',
-    jpeg: 'https://cdn.jsdelivr.net/gh/PKief/vscode-material-icon-theme@master/icons/image.svg',
-    gif: 'https://cdn.jsdelivr.net/gh/PKief/vscode-material-icon-theme@master/icons/image.svg',
-    webp: 'https://cdn.jsdelivr.net/gh/PKief/vscode-material-icon-theme@master/icons/image.svg',
-    ico: 'https://cdn.jsdelivr.net/gh/PKief/vscode-material-icon-theme@master/icons/image.svg',
-    xml: 'https://cdn.jsdelivr.net/gh/PKief/vscode-material-icon-theme@master/icons/xml.svg',
-    yaml: 'https://cdn.jsdelivr.net/gh/PKief/vscode-material-icon-theme@master/icons/yaml.svg',
-    yml: 'https://cdn.jsdelivr.net/gh/PKief/vscode-material-icon-theme@master/icons/yaml.svg',
-    kt: 'https://cdn.jsdelivr.net/gh/PKief/vscode-material-icon-theme@master/icons/kotlin.svg',
-    kts: 'https://cdn.jsdelivr.net/gh/PKief/vscode-material-icon-theme@master/icons/kotlin.svg',
-    toml: 'https://cdn.jsdelivr.net/gh/PKief/vscode-material-icon-theme@master/icons/toml.svg',
-    gradle: 'https://cdn.jsdelivr.net/gh/PKief/vscode-material-icon-theme@master/icons/gradle.svg',
-    properties: 'https://cdn.jsdelivr.net/gh/PKief/vscode-material-icon-theme@master/icons/properties.svg',
-    pro: 'https://cdn.jsdelivr.net/gh/PKief/vscode-material-icon-theme@master/icons/settings.svg',
-    git: 'https://cdn.jsdelivr.net/gh/PKief/vscode-material-icon-theme@master/icons/git.svg',
-    gitignore: 'https://cdn.jsdelivr.net/gh/PKief/vscode-material-icon-theme@master/icons/git.svg',
-    config: 'https://cdn.jsdelivr.net/gh/PKief/vscode-material-icon-theme@master/icons/settings.svg',
-    sh: 'https://cdn.jsdelivr.net/gh/PKief/vscode-material-icon-theme@master/icons/console.svg',
-    bash: 'https://cdn.jsdelivr.net/gh/PKief/vscode-material-icon-theme@master/icons/console.svg',
-    zsh: 'https://cdn.jsdelivr.net/gh/PKief/vscode-material-icon-theme@master/icons/console.svg',
-    txt: 'https://cdn.jsdelivr.net/gh/PKief/vscode-material-icon-theme@master/icons/document.svg',
-    php: 'https://cdn.jsdelivr.net/gh/PKief/vscode-material-icon-theme@master/icons/php.svg',
-    rb: 'https://cdn.jsdelivr.net/gh/PKief/vscode-material-icon-theme@master/icons/ruby.svg',
-    ruby: 'https://cdn.jsdelivr.net/gh/PKief/vscode-material-icon-theme@master/icons/ruby.svg'
-  };
-  return icons[ext] || null;
+export const getOfficialIcon = (filenameOrExt: string): string => {
+  if (!filenameOrExt) return '';
+  let name = filenameOrExt;
+  // If it's just an extension without a dot, make it look like a filename
+  if (!name.includes('.') && name.length <= 4) {
+    name = `dummy.${name}`;
+  }
+  const iconName = getIconForFile(name);
+  return `${CDN_BASE_URL}${iconName}`;
 };
+
+export const getFolderIcon = (foldername: string, isOpen: boolean): string => {
+  const iconName = isOpen ? getIconForOpenFolder(foldername) : getIconForFolder(foldername);
+  return `${CDN_BASE_URL}${iconName}`;
+};
+

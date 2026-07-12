@@ -17,7 +17,8 @@ import { CoreEditor } from './CoreEditor';
 import { MobileKeyboardToolbar, SHORTCUT_PRESETS } from './MobileKeyboardToolbar';
 import { 
   VSCodeDefaultFileIcon, 
-  getOfficialIcon 
+  getOfficialIcon,
+  getFolderIcon
 } from './VSCodeIcons';
 import { 
   SYNTAX_THEMES, 
@@ -878,7 +879,8 @@ Instructions: Modify the code according to the task. Return ONLY the modified co
           {activeFiles.map((fname) => {
             const isSelected = filename === fname;
             const extension = fname.split('.').pop()?.toLowerCase() || '';
-            const officialIconUrl = getOfficialIcon(extension);
+            const fileName = fname.split('/').pop() || fname;
+            const officialIconUrl = getOfficialIcon(fileName);
             
             let FileIcon = File;
             let iconColor = 'text-zinc-500';
@@ -900,9 +902,9 @@ Instructions: Modify the code according to the task. Return ONLY the modified co
               >
                 {isSelected && <div className="absolute bottom-0 left-0 right-0 h-[1.5px] bg-white z-10" />}
                 {officialIconUrl ? (
-                  <img src={officialIconUrl} alt={extension} className="w-3.5 h-3.5 object-contain" />
+                  <img src={officialIconUrl} alt={extension} className="object-contain" style={{ width: fileIconSize, height: fileIconSize }} />
                 ) : (
-                  <VSCodeDefaultFileIcon size={14} className={iconColor} />
+                  <VSCodeDefaultFileIcon size={fileIconSize} className={iconColor} />
                 )}
                 <span className="text-[11px] truncate flex-1 font-sans">{fname.split('/').pop()}</span>
                 <button 
@@ -1016,7 +1018,7 @@ Instructions: Modify the code according to the task. Return ONLY the modified co
             let fileIcon = <File size={11} className="text-zinc-400" />;
             if (isLast) {
               const ext = segment.split('.').pop()?.toLowerCase() || '';
-              const officialIconUrl = getOfficialIcon(ext);
+              const officialIconUrl = getOfficialIcon(segment);
               if (officialIconUrl) {
                 fileIcon = (
                   <img 
@@ -1048,9 +1050,12 @@ Instructions: Modify the code according to the task. Return ONLY the modified co
                   }`}
                 >
                   {isFolder ? (
-                    <svg className="w-3.5 h-3.5 text-zinc-500 shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
-                      <path strokeLinecap="round" strokeLinejoin="round" d="M3 7v10a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-6l-2-2H5a2 2 0 00-2 2z" />
-                    </svg>
+                    <img 
+                      src={getFolderIcon(segment, false)} 
+                      alt={segment} 
+                      className="object-contain shrink-0" 
+                      style={{ width: 13, height: 13 }}
+                    />
                   ) : (
                     <span className="shrink-0">{fileIcon}</span>
                   )}

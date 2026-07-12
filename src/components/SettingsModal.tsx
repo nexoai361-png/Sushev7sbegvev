@@ -28,29 +28,12 @@ interface SettingsModalProps {
   setShortcutPresetName: (preset: string) => void;
   customSymbolsStr: string;
   setCustomSymbolsStr: (symbols: string) => void;
+  fileIconSize: number;
+  setFileIconSize: (size: number) => void;
 }
 
 const FONT_OPTIONS_MAP: Record<string, string> = {
-  'Segoe UI': '"Segoe UI", -apple-system, BlinkMacSystemFont, sans-serif',
-  'Google Sans': '"Google Sans", "Open Sans", sans-serif',
-  'Inter': 'Inter, sans-serif',
-  'Open Sans': '"Open Sans", sans-serif',
-  'Poppins': 'Poppins, sans-serif',
-  'Lato': 'Lato, sans-serif',
-  'Nunito': 'Nunito, sans-serif',
-  'Rubik': 'Rubik, sans-serif',
-  'Ubuntu': 'Ubuntu, sans-serif',
-  'Outfit': 'Outfit, sans-serif',
-  'Cabin': 'Cabin, sans-serif',
-  'Lexend': 'Lexend, sans-serif',
-  'Fira Sans': '"Fira Sans", sans-serif',
-  'Quicksand': 'Quicksand, sans-serif',
-  'Plus Jakarta Sans': '"Plus Jakarta Sans", sans-serif',
-  'Georgia': 'Georgia, serif',
-  'Lora': 'Lora, serif',
-  'Merriweather': 'Merriweather, serif',
-  'Roboto': 'Roboto, sans-serif',
-  'Montserrat': 'Montserrat, sans-serif'
+  'System Font': 'system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif'
 };
 
 export const SettingsModal: React.FC<SettingsModalProps> = ({
@@ -76,6 +59,8 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
   setShortcutPresetName,
   customSymbolsStr,
   setCustomSymbolsStr,
+  fileIconSize,
+  setFileIconSize,
 }) => {
   const [settingsCategory, setSettingsCategory] = useState<'appearance' | 'editor' | 'application' | 'syntax' | 'shortcuts'>('appearance');
   const [isFontDropdownOpen, setIsFontDropdownOpen] = useState(false);
@@ -202,6 +187,29 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
                             ))}
                           </div>
                         )}
+                      </div>
+                    </div>
+
+                    <div>
+                      <div className="flex items-center justify-between mb-1.5">
+                        <label className="text-[12px] text-[#cccccc] font-medium">File Icon Size</label>
+                        <div className="flex items-center gap-2">
+                          <button 
+                            onClick={() => setFileIconSize(Math.max(10, fileIconSize - 1))}
+                            className="p-1 hover:bg-white/10 rounded-none transition-colors text-[#858585] hover:text-white"
+                            title="Decrease icon size"
+                          >
+                            <Minus size={12} />
+                          </button>
+                          <span className="text-[10px] text-[#858585] min-w-[24px] text-center">{fileIconSize}px</span>
+                          <button 
+                            onClick={() => setFileIconSize(Math.min(32, fileIconSize + 1))}
+                            className="p-1 hover:bg-white/10 rounded-none transition-colors text-[#858585] hover:text-white"
+                            title="Increase icon size"
+                          >
+                            <Plus size={12} />
+                          </button>
+                        </div>
                       </div>
                     </div>
                   </div>

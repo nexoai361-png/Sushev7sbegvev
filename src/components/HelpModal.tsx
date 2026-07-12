@@ -20,7 +20,6 @@ export const HelpModal: React.FC<HelpModalProps> = ({
             
             
             className="bg-background border border-white/10 w-full max-w-2xl max-h-[85vh] rounded-none shadow-[0_32px_64px_rgba(0,0,0,0.5)] flex flex-col overflow-hidden animate-in fade-in zoom-in-95 duration-200"
-            style={{ fontFamily: "'Inter', sans-serif" }}
           >
             {/* Modal Header */}
             <div className="px-6 py-5 border-b border-white/5 flex items-center justify-between sticky top-0 bg-background z-10">

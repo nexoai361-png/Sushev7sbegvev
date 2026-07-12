@@ -171,26 +171,7 @@ const TermuxDetector = registerPlugin<TermuxDetectorPluginType>('TermuxDetector'
 
 
 const FONT_OPTIONS: Record<string, string> = {
-  'Segoe UI': '"Segoe UI", -apple-system, BlinkMacSystemFont, sans-serif',
-  'Google Sans': '"Google Sans", "Open Sans", sans-serif',
-  'Inter': 'Inter, sans-serif',
-  'Open Sans': '"Open Sans", sans-serif',
-  'Poppins': 'Poppins, sans-serif',
-  'Lato': 'Lato, sans-serif',
-  'Nunito': 'Nunito, sans-serif',
-  'Rubik': 'Rubik, sans-serif',
-  'Ubuntu': 'Ubuntu, sans-serif',
-  'Outfit': 'Outfit, sans-serif',
-  'Cabin': 'Cabin, sans-serif',
-  'Lexend': 'Lexend, sans-serif',
-  'Fira Sans': '"Fira Sans", sans-serif',
-  'Quicksand': 'Quicksand, sans-serif',
-  'Plus Jakarta Sans': '"Plus Jakarta Sans", sans-serif',
-  'Georgia': 'Georgia, serif',
-  'Lora': 'Lora, serif',
-  'Merriweather': 'Merriweather, serif',
-  'Roboto': 'Roboto, sans-serif',
-  'Montserrat': 'Montserrat, sans-serif'
+  'System Font': 'system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif'
 };
 
 import 'katex/dist/katex.min.css';
@@ -842,7 +823,7 @@ export default function App() {
   const [appThemeName, setAppThemeName] = useState('VS Code Dark');
   const [iconThemeName, setIconThemeName] = useState('VS code');
   const [fileIconSize, setFileIconSize] = useState(16);
-  const [appFontName, setAppFontName] = useState('Inter');
+  const [appFontName, setAppFontName] = useState('System Font');
   const [bookmarks, setBookmarks] = useState<Bookmark[]>([]);
   const [shortcutPresetName, setShortcutPresetName] = useState(() => localStorage.getItem('reversx_shortcut_preset_name') || 'VS Code Default');
   const [customSymbolsStr, setCustomSymbolsStr] = useState(() => localStorage.getItem('reversx_custom_symbols') || '<, >, /, {, }, [, ], ;, (, ), ", \', :, =, !, &, |, +, -, *, %, ?, #, $, @, ^, ~, `');
@@ -1198,7 +1179,7 @@ export default function App() {
         setAppThemeName(await checkAndMigrate('reversx_app_theme', false, 'VS Code Dark'));
         setIconThemeName(await checkAndMigrate('reversx_icon_theme', false, 'VS code'));
         setFileIconSize(await checkAndMigrate('reversx_file_icon_size', false, 16));
-        setAppFontName(await checkAndMigrate('reversx_app_font', false, 'Inter'));
+        setAppFontName(await checkAndMigrate('reversx_app_font', false, 'System Font'));
         
         const loadedBookmarks = await checkAndMigrate('reversx_bookmarks', true, []);
         setBookmarks(loadedBookmarks);
@@ -4895,7 +4876,6 @@ export default function App() {
                   ${isDragging ? 'ring-2 ring-accent ring-inset bg-accent/5' : ''}
                   fixed inset-y-0 left-0 z-[60] md:relative md:z-10
                 `}
-                style={{ fontFamily: "'Cabin', sans-serif" }}
               >
                 {isDragging && (
                   <div className="absolute inset-0 z-[70] flex flex-col items-center justify-center bg-accent/10 backdrop-blur-[2px] pointer-events-none border-2 border-dashed border-accent/40 m-2 rounded-lg">
@@ -5858,6 +5838,8 @@ export default function App() {
         setShortcutPresetName={setShortcutPresetName}
         customSymbolsStr={customSymbolsStr}
         setCustomSymbolsStr={setCustomSymbolsStr}
+        fileIconSize={fileIconSize}
+        setFileIconSize={setFileIconSize}
       />
 
       <GithubExportModal 

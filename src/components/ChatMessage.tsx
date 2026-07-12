@@ -48,7 +48,7 @@ export const ChatMessage = React.memo(React.forwardRef<HTMLDivElement, ChatMessa
           />
         )}
 
-        <div className="markdown-content" style={{ fontFamily: '"Fira Code", monospace' }}>
+        <div className="markdown-content">
           <React.Suspense fallback={<div className="animate-pulse h-8 bg-foreground/5 rounded w-1/2"></div>}>
             <MarkdownRenderer
               components={{

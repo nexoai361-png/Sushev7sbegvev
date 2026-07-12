@@ -1,12 +1,13 @@
 import React, { useState } from 'react';
 import { FilePlus, FolderPlus } from 'lucide-react';
 import { useIcons } from '../lib/icons';
-import { TreeNodeType } from '../types';
+import { TreeNodeType, useFileIconSize } from '../types';
 import { 
   VSCodeDefaultFileIcon, 
   VSCodeFolderClosedIcon, 
   VSCodeFolderOpenIcon, 
-  getOfficialIcon 
+  getOfficialIcon,
+  getFolderIcon
 } from './VSCodeIcons';
 
 interface InlineCreationInputProps {
@@ -63,7 +64,6 @@ export const InlineCreationInput = ({
         }}
         placeholder={type === 'folder' ? 'Folder Name...' : 'File Name...'}
         className="flex-1 bg-[#3c3c3c] border border-[#007acc] text-white text-[12px] px-1 py-[1px] outline-none rounded-none placeholder-white/25 w-full min-w-0 z-10"
-        style={{ fontFamily: "'Cabin', sans-serif" }}
         onClick={(e) => e.stopPropagation()}
       />
     </div>
@@ -108,6 +108,7 @@ export const FileTreeItem = React.memo(({
   onInitiateInlineCreateInFolder
 }: FileTreeItemProps) => {
   const [isOpen, setIsOpen] = useState(true);
+  const fileIconSize = useFileIconSize();
 
   const {
      FolderOpen, ChevronDownIcon, ChevronRightIcon, File, FileJson, ImageIcon, Edit3, Trash2, MoreVertical, Download
@@ -118,7 +119,7 @@ export const FileTreeItem = React.memo(({
       <div className="w-full flex flex-col">
         <div 
           onClick={() => setIsOpen(!isOpen)}
-          className={`w-full flex items-center gap-1.5 h-[22px] text-[12px] group cursor-pointer text-[#cccccc] hover:bg-[#2a2d2e] hover:text-white relative`}
+          className={`w-full flex items-center gap-1.5 h-[22px] text-[12px] group cursor-pointer text-[#cccccc] hover:bg-[#2a2d2e] active:bg-[#37373d] hover:text-white relative transition-all duration-100`}
           style={{ paddingLeft: `${Math.max(8, depth * 12 + 8)}px`, paddingRight: '12px' }}
         >
           {depth > 0 && Array.from({ length: depth }).map((_, i) => (
@@ -132,10 +133,18 @@ export const FileTreeItem = React.memo(({
           <div className="w-4 h-4 flex items-center justify-center opacity-60 group-hover:opacity-100 transition-opacity">
             {isOpen ? <ChevronDownIcon size={12} /> : <ChevronRightIcon size={12} />}
           </div>
-          <div className="shrink-0 select-none">
-            {isOpen ? <VSCodeFolderOpenIcon size={14} /> : <VSCodeFolderClosedIcon size={14} />}
+          <div className="shrink-0 select-none flex items-center justify-center" style={{ width: fileIconSize, height: fileIconSize }}>
+            <img 
+              src={getFolderIcon(node.name, isOpen)} 
+              alt={node.name} 
+              className="object-contain shrink-0" 
+              style={{ width: fileIconSize, height: fileIconSize }}
+              onError={(e) => {
+                (e.target as HTMLImageElement).style.display = 'none';
+              }}
+            />
           </div>
-          <span className="truncate flex-1 tracking-tight leading-none pt-[1px]" style={{ fontFamily: "'Cabin', sans-serif" }}>{node.name}</span>
+          <span className="truncate flex-1 tracking-tight leading-none pt-[1px]">{node.name}</span>
 
           <div className="opacity-0 group-hover:opacity-100 flex items-center gap-0.5 z-20 shrink-0 ml-1">
             <button
@@ -144,7 +153,7 @@ export const FileTreeItem = React.memo(({
                 setIsOpen(true);
                 onInitiateInlineCreateInFolder('file', node.path);
               }}
-              className="p-0.5 hover:bg-white/10 rounded-[2px] text-zinc-400 hover:text-white transition-colors"
+              className="p-0.5 hover:bg-white/10 active:bg-white/20 rounded-[2px] text-zinc-400 hover:text-white transition-all duration-100"
               title="New File under folder..."
             >
               <FilePlus size={11} />
@@ -155,7 +164,7 @@ export const FileTreeItem = React.memo(({
                 setIsOpen(true);
                 onInitiateInlineCreateInFolder('folder', node.path);
               }}
-              className="p-0.5 hover:bg-white/10 rounded-[2px] text-zinc-400 hover:text-white transition-colors"
+              className="p-0.5 hover:bg-white/10 active:bg-white/20 rounded-[2px] text-zinc-400 hover:text-white transition-all duration-100"
               title="New Folder under folder..."
             >
               <FolderPlus size={11} />
@@ -210,7 +219,7 @@ export const FileTreeItem = React.memo(({
   const isSelected = activeFile === name;
   const extension = name.split('.').pop()?.toLowerCase() || '';
   
-  const officialIconUrl = getOfficialIcon(extension);
+  const officialIconUrl = getOfficialIcon(node.name);
   let Icon = File;
   let iconColor = isSelected ? 'text-white' : 'text-[#cccccc]';
 
@@ -227,10 +236,10 @@ export const FileTreeItem = React.memo(({
   return (
     <div
       onClick={() => handleFileOpen(name)}
-      className={`w-full flex items-center gap-1.5 h-[22px] text-[12px] group cursor-pointer relative ${
+      className={`w-full flex items-center gap-1.5 h-[22px] text-[12px] group cursor-pointer relative transition-all duration-100 ${
         isSelected 
-          ? 'bg-[#37373d] text-white before:absolute before:left-0 before:top-0 before:bottom-0 before:w-[2px] before:bg-[#007acc]' 
-          : 'text-[#cccccc] hover:bg-[#2a2d2e] hover:text-[#cccccc]'
+          ? 'bg-[#37373d] text-white before:absolute before:left-0 before:top-0 before:bottom-0 before:w-[2px] before:bg-[#007acc] active:bg-[#4b4d55]' 
+          : 'text-[#cccccc] hover:bg-[#2a2d2e] active:bg-[#37373d] hover:text-[#cccccc]'
       }`}
       style={{ paddingLeft: `${Math.max(8, depth * 12 + 28)}px`, paddingRight: '16px' }}
     >
@@ -247,18 +256,18 @@ export const FileTreeItem = React.memo(({
           src={officialIconUrl} 
           alt={extension} 
           className="object-contain shrink-0" 
-          style={{ width: 14, height: 14 }}
+          style={{ width: fileIconSize, height: fileIconSize }}
           onError={(e) => {
             (e.target as HTMLImageElement).style.display = 'none';
           }}
         />
       ) : (
-        <VSCodeDefaultFileIcon size={14} />
+        <VSCodeDefaultFileIcon size={fileIconSize} />
       )}
       
-      <span className="truncate flex-1 tracking-tight leading-none pt-[1px]" style={{ fontFamily: "'Cabin', sans-serif" }}>
+      <span className="truncate flex-1 tracking-tight leading-none pt-[1px]">
         {node.name}
-        {isSelected && <span className="ml-1.5 text-blue-500 font-extrabold text-[14px] leading-none select-none inline-block">•</span>}
+        {isSelected && <span className="ml-1.5 text-white font-extrabold text-[14px] leading-none select-none inline-block">•</span>}
       </span>
       
       <div className="relative flex items-center shrink-0">
@@ -267,7 +276,7 @@ export const FileTreeItem = React.memo(({
             e.stopPropagation(); 
             setActiveFileMenu(name === activeFileMenu ? null : name); 
           }}
-          className="p-0.5 hover:bg-white/10 rounded text-foreground-subtle hover:text-foreground-muted transition-colors opacity-0 group-hover:opacity-100"
+          className="p-0.5 hover:bg-white/10 active:bg-white/20 rounded text-foreground-subtle hover:text-foreground-muted transition-all duration-100 opacity-0 group-hover:opacity-100"
         >
           <MoreVertical size={12} />
         </button>

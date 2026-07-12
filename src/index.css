@@ -28,6 +28,10 @@
 }
 
 @layer base {
+  :root, html, body {
+    color-scheme: dark !important;
+  }
+
   html, body {
     @apply bg-background text-foreground antialiased selection:bg-[#264f78] selection:text-white;
     font-family: var(--font-sans);
@@ -179,14 +183,14 @@
 
 /* Markdown Content Styling */
 .markdown-content {
-  font-family: 'Fira Code', var(--font-mono) !important;
+  font-family: var(--app-ui-font, "Segoe UI", -apple-system, BlinkMacSystemFont, "Segoe UI Web (West European)", sans-serif) !important;
   line-height: 1.8;
   letter-spacing: 0.03em;
   color: var(--color-foreground);
 }
 
-.markdown-content *, .markdown-content p, .markdown-content span, .markdown-content li, .markdown-content div {
-  font-family: 'Fira Code', var(--font-mono) !important;
+.markdown-content p, .markdown-content span, .markdown-content li, .markdown-content div {
+  font-family: var(--app-ui-font, "Segoe UI", -apple-system, BlinkMacSystemFont, "Segoe UI Web (West European)", sans-serif) !important;
 }
 .markdown-content ul {
   list-style-type: disc;
@@ -528,9 +532,9 @@ code, pre {
 
 
 h1, h2, h3, h4, h5, h6, b, strong, .font-bold, .font-semibold, .font-extrabold {
-  font-family: "Open Sans", "Inter", sans-serif !important;
+  font-family: var(--app-ui-font, "Segoe UI", -apple-system, BlinkMacSystemFont, "Segoe UI Web (West European)", sans-serif) !important;
 }
 body {
-  font-family: "Segoe UI", "Segoe UI Web (West European)", "Inter", sans-serif !important;
+  font-family: var(--app-ui-font, "Segoe UI", -apple-system, BlinkMacSystemFont, "Segoe UI Web (West European)", sans-serif) !important;
 }
 
