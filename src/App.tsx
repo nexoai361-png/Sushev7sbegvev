@@ -274,6 +274,16 @@ const getInitialCode = (name: string) => {
 };
 
 export const APP_THEMES: Record<string, any> = {
+  'ReversX Studio': {
+    background: '#23272e',
+    foreground: '#ccd2db',
+    muted: '#6b7382',
+    subtle: '#383d48',
+    accent: '#3e9af2',
+    accentForeground: '#ffffff',
+    sidebar: '#1e2127',
+    border: '#282c34'
+  },
   'VS Code Dark': {
     background: '#1e1e1e',
     foreground: '#d4d4d4',
@@ -2146,17 +2156,18 @@ export default function App() {
   const resizeExplorer = useCallback((e: MouseEvent | TouchEvent) => {
     if (isResizingExplorer) {
       const clientX = 'touches' in e ? e.touches[0].clientX : e.clientX;
-      // clientX - total offset from left (activity bar + sidebar)
-      const offset = 56 + (isSidebarMinimized ? 0 : sidebarWidth);
+      const isMobile = windowWidth < 768;
+      // clientX - total offset from left (activity bar + sidebar on desktop, 0 on mobile)
+      const offset = isMobile ? 0 : (56 + (isSidebarMinimized ? 0 : sidebarWidth));
       const newWidth = clientX - offset;
-      const minWidth = 150;
-      const maxWidth = 500;
+      const minWidth = isMobile ? 120 : 150;
+      const maxWidth = isMobile ? windowWidth - 32 : 500;
       
       if (newWidth > minWidth && newWidth < maxWidth) {
         setExplorerWidth(newWidth);
       }
     }
-  }, [isResizingExplorer, isSidebarMinimized, sidebarWidth]);
+  }, [isResizingExplorer, isSidebarMinimized, sidebarWidth, windowWidth]);
 
   const resizeEditorSplit = useCallback((e: MouseEvent | TouchEvent) => {
     const clientX = 'touches' in e ? e.touches[0].clientX : e.clientX;
@@ -4871,27 +4882,118 @@ export default function App() {
                 onDragOver={(e) => { e.preventDefault(); setIsDragging(true); }}
                 onDragLeave={() => setIsDragging(false)}
                 onDrop={handleFileDrop}
-                className={`flex flex-col bg-[#252526] border-r border-[#2b2b2b] transition-all duration-300 ease-in-out overflow-hidden
-                  ${isExplorerOpen && !isEditorFullscreen && !isZenMode ? (isLandscape ? 'w-[200px]' : 'w-[260px]') + ' opacity-100 pointer-events-auto' : 'w-0 opacity-0 pointer-events-none'}
+                style={{
+                  backgroundColor: currentAppTheme.sidebar,
+                  borderColor: currentAppTheme.border,
+                  '--sidebar-bg': currentAppTheme.sidebar,
+                  '--sidebar-border': currentAppTheme.border,
+                  '--sidebar-fg': currentAppTheme.foreground,
+                  '--sidebar-muted': currentAppTheme.muted,
+                  '--sidebar-subtle': currentAppTheme.subtle,
+                  '--sidebar-accent': currentAppTheme.accent,
+                  '--sidebar-accent-fg': currentAppTheme.accentForeground,
+                  width: isExplorerOpen && !isEditorFullscreen && !isZenMode ? `${explorerWidth}px` : '0px',
+                } as React.CSSProperties}
+                className={`flex flex-row border-r overflow-hidden
+                  ${isResizingExplorer ? '' : 'transition-all duration-300 ease-in-out'}
+                  ${isExplorerOpen && !isEditorFullscreen && !isZenMode ? 'opacity-100 pointer-events-auto' : 'opacity-0 pointer-events-none'}
                   ${isDragging ? 'ring-2 ring-accent ring-inset bg-accent/5' : ''}
                   fixed inset-y-0 left-0 z-[60] md:relative md:z-10
                 `}
               >
-                {isDragging && (
-                  <div className="absolute inset-0 z-[70] flex flex-col items-center justify-center bg-accent/10 backdrop-blur-[2px] pointer-events-none border-2 border-dashed border-accent/40 m-2 rounded-lg">
-                    <PlusIcon className="text-accent mb-2" size={24} />
-                    <span className="text-[10px] font-extrabold text-accent tracking-[0.2em] ">Drop to Import</span>
+                {/* Left Activity Bar */}
+                <div 
+                  className="w-12 h-full flex flex-col justify-between py-2 shrink-0 select-none border-r border-[var(--sidebar-border)]/30 bg-[var(--sidebar-bg)]"
+                >
+                  {/* Top Icons */}
+                  <div className="flex flex-col items-center gap-1 w-full">
+                    {/* Explorer Icon (Active) */}
+                    <div className="w-full flex items-center relative group/item">
+                      <div className="absolute left-0 w-[2.5px] h-6 bg-zinc-400 rounded-r-[2px]" />
+                      <button 
+                        className="w-full h-10 flex items-center justify-center text-[var(--sidebar-fg)] transition-all duration-150"
+                        title="Explorer"
+                      >
+                        <Files size={18} strokeWidth={2} />
+                      </button>
+                    </div>
+
+                    {/* Search Icon */}
+                    <div className="w-full flex items-center relative group/item">
+                      <div className="absolute left-0 w-[2.5px] h-6 bg-transparent group-hover/item:bg-[var(--sidebar-fg)]/25 transition-all rounded-r-[2px]" />
+                      <button 
+                        className="w-full h-10 flex items-center justify-center text-[var(--sidebar-fg)]/50 hover:text-[var(--sidebar-fg)]/85 transition-all duration-150"
+                        title="Search"
+                      >
+                        <Search size={18} strokeWidth={1.5} />
+                      </button>
+                    </div>
+
+                    {/* Source Control Icon */}
+                    <div className="w-full flex items-center relative group/item">
+                      <div className="absolute left-0 w-[2.5px] h-6 bg-transparent group-hover/item:bg-[var(--sidebar-fg)]/25 transition-all rounded-r-[2px]" />
+                      <button 
+                        className="w-full h-10 flex items-center justify-center text-[var(--sidebar-fg)]/50 hover:text-[var(--sidebar-fg)]/85 transition-all duration-150"
+                        title="Source Control"
+                      >
+                        <GitBranch size={18} strokeWidth={1.5} />
+                      </button>
+                    </div>
+
+                    {/* Run and Debug Icon */}
+                    <div className="w-full flex items-center relative group/item">
+                      <div className="absolute left-0 w-[2.5px] h-6 bg-transparent group-hover/item:bg-[var(--sidebar-fg)]/25 transition-all rounded-r-[2px]" />
+                      <button 
+                        className="w-full h-10 flex items-center justify-center text-[var(--sidebar-fg)]/50 hover:text-[var(--sidebar-fg)]/85 transition-all duration-150"
+                        title="Run and Debug"
+                      >
+                        <Play size={18} strokeWidth={1.5} />
+                      </button>
+                    </div>
+
+                    {/* Extensions Icon */}
+                    <div className="w-full flex items-center relative group/item">
+                      <div className="absolute left-0 w-[2.5px] h-6 bg-transparent group-hover/item:bg-[var(--sidebar-fg)]/25 transition-all rounded-r-[2px]" />
+                      <button 
+                        className="w-full h-10 flex items-center justify-center text-[var(--sidebar-fg)]/50 hover:text-[var(--sidebar-fg)]/85 transition-all duration-150"
+                        title="Extensions"
+                      >
+                        <Blocks size={18} strokeWidth={1.5} />
+                      </button>
+                    </div>
                   </div>
-                )}
-                <div className="h-9 flex items-center justify-between px-4 bg-[#252526] shrink-0 select-none">
+
+                  {/* Bottom Settings Icon */}
+                  <div className="flex flex-col items-center gap-1 w-full">
+                    <div className="w-full flex items-center relative group/item">
+                      <div className="absolute left-0 w-[2.5px] h-6 bg-transparent group-hover/item:bg-[var(--sidebar-fg)]/25 transition-all rounded-r-[2px]" />
+                      <button 
+                        className="w-full h-10 flex items-center justify-center text-[var(--sidebar-fg)]/50 hover:text-[var(--sidebar-fg)]/85 transition-all duration-150"
+                        title="Settings"
+                      >
+                        <Settings size={18} strokeWidth={1.5} />
+                      </button>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Main Explorer Content Area */}
+                <div className="flex-1 min-w-0 h-full flex flex-col overflow-hidden bg-[var(--sidebar-bg)] relative">
+                  {isDragging && (
+                    <div className="absolute inset-0 z-[70] flex flex-col items-center justify-center bg-accent/10 backdrop-blur-[2px] pointer-events-none border-2 border-dashed border-accent/40 m-2 rounded-lg">
+                      <PlusIcon className="text-accent mb-2" size={24} />
+                      <span className="text-[10px] font-extrabold text-accent tracking-[0.2em] ">Drop to Import</span>
+                    </div>
+                  )}
+                <div className="h-9 flex items-center justify-between px-4 bg-[var(--sidebar-bg)] shrink-0 select-none border-b border-[var(--sidebar-border)]/40">
                   <div className="flex items-center gap-2">
-                    <span className="text-[11px] font-bold text-[#bbbbbb] tracking-wider font-inherit select-none">Explorer</span>
+                    <span className="text-[11px] font-bold text-[var(--sidebar-fg)] opacity-80 uppercase tracking-wider font-inherit select-none">Explorer</span>
                   </div>
                   <div className="flex items-center gap-0.5">
                     <div className="relative">
                       <button 
                         onClick={() => setIsUploadMenuOpen(!isUploadMenuOpen)}
-                        className={`w-[22px] h-[22px] flex items-center justify-center rounded-none transition-colors ${isUploadMenuOpen ? 'bg-[#37373d] text-white' : 'text-zinc-400 hover:text-white hover:bg-[#2a2d2e]'}`}
+                        className={`w-[22px] h-[22px] flex items-center justify-center rounded-sm transition-colors ${isUploadMenuOpen ? 'bg-[var(--sidebar-subtle)] text-[var(--sidebar-fg)]' : 'text-[var(--sidebar-fg)]/60 hover:text-[var(--sidebar-fg)] hover:bg-[var(--sidebar-subtle)]/70'}`}
                         title="Upload"
                       >
                         <Upload size={14} />
@@ -4902,33 +5004,27 @@ export default function App() {
                           <div key="upload-menu">
                             <div className="fixed inset-0 z-[70]" onClick={() => setIsUploadMenuOpen(false)} />
                             <div
-                              
-                              
-                              
-                              className="absolute right-0 top-full mt-1 w-max min-w-[150px] bg-[#252526] border border-[#454545] rounded-none shadow-[0_2px_8px_rgba(0,0,0,0.5)] z-[80] overflow-hidden py-1"
+                              className="absolute right-0 top-full mt-1 w-max min-w-[150px] bg-[var(--sidebar-bg)] border border-[var(--sidebar-border)] rounded-sm shadow-[0_4px_12px_rgba(0,0,0,0.4)] z-[80] overflow-hidden py-1"
                             >
                               <button 
                                 onClick={() => { explorerFileInputRef.current?.click(); setIsUploadMenuOpen(false); }}
-                                className="w-full px-3 py-1.5 flex items-center gap-2 text-left text-[11.5px] text-[#cccccc] hover:bg-[#007acc] hover:text-white transition-colors rounded-none font-inherit whitespace-nowrap"
+                                className="w-full px-3 py-1.5 flex items-center gap-2 text-left text-[11.5px] text-[var(--sidebar-fg)]/85 hover:bg-[var(--sidebar-accent)] hover:text-[var(--sidebar-accent-fg)] transition-colors rounded-none font-inherit whitespace-nowrap"
                                 title="Upload multiple files"
                               >
-                                
                                 <span className="leading-none pt-[1px] whitespace-nowrap">Upload file</span>
                               </button>
                               <button 
                                 onClick={() => { zipInputRef.current?.click(); setIsUploadMenuOpen(false); }}
-                                className="w-full px-3 py-1.5 flex items-center gap-2 text-left text-[11.5px] text-[#cccccc] hover:bg-[#007acc] hover:text-white transition-colors rounded-none font-inherit whitespace-nowrap"
+                                className="w-full px-3 py-1.5 flex items-center gap-2 text-left text-[11.5px] text-[var(--sidebar-fg)]/85 hover:bg-[var(--sidebar-accent)] hover:text-[var(--sidebar-accent-fg)] transition-colors rounded-none font-inherit whitespace-nowrap"
                                 title="Upload ZIP and extract"
                               >
-                                
                                 <span className="leading-none pt-[1px] whitespace-nowrap">Upload Zip file</span>
                               </button>
                               <button 
                                 onClick={() => { mediaFileInputRef.current?.click(); setIsUploadMenuOpen(false); }}
-                                className="w-full px-3 py-1.5 flex items-center gap-2 text-left text-[11.5px] text-[#cccccc] hover:bg-[#007acc] hover:text-white transition-colors rounded-none font-inherit whitespace-nowrap"
+                                className="w-full px-3 py-1.5 flex items-center gap-2 text-left text-[11.5px] text-[var(--sidebar-fg)]/85 hover:bg-[var(--sidebar-accent)] hover:text-[var(--sidebar-accent-fg)] transition-colors rounded-none font-inherit whitespace-nowrap"
                                 title="Upload images and videos"
                               >
-                                
                                 <span className="leading-none pt-[1px] whitespace-nowrap">Upload media file</span>
                               </button>
                               </div>
@@ -4939,14 +5035,14 @@ export default function App() {
 
                     <button 
                       onClick={handleGithubImport}
-                      className="w-[22px] h-[22px] flex items-center justify-center rounded-none text-zinc-400 hover:text-white hover:bg-[#2a2d2e] transition-colors"
+                      className="w-[22px] h-[22px] flex items-center justify-center rounded-sm text-[var(--sidebar-fg)]/60 hover:text-[var(--sidebar-fg)] hover:bg-[var(--sidebar-subtle)]/70 transition-colors"
                       title="Import from GitHub"
                     >
                       <Github size={14} />
                     </button>
                     <button 
                       onClick={handleGithubExport}
-                      className="w-[22px] h-[22px] flex items-center justify-center rounded-none text-zinc-400 hover:text-white hover:bg-[#2a2d2e] transition-colors"
+                      className="w-[22px] h-[22px] flex items-center justify-center rounded-sm text-[var(--sidebar-fg)]/60 hover:text-[var(--sidebar-fg)] hover:bg-[var(--sidebar-subtle)]/70 transition-colors"
                       title="Push to GitHub"
                     >
                       <Share2 size={14} />
@@ -4954,7 +5050,7 @@ export default function App() {
                     <div className="relative">
                       <button 
                         onClick={() => setIsExplorerCreateMenuOpen(!isExplorerCreateMenuOpen)}
-                        className={`w-[22px] h-[22px] flex items-center justify-center rounded-none transition-colors ${isExplorerCreateMenuOpen ? 'bg-[#37373d] text-white' : 'text-zinc-400 hover:text-white hover:bg-[#2a2d2e]'}`}
+                        className={`w-[22px] h-[22px] flex items-center justify-center rounded-sm transition-colors ${isExplorerCreateMenuOpen ? 'bg-[var(--sidebar-subtle)] text-[var(--sidebar-fg)]' : 'text-[var(--sidebar-fg)]/60 hover:text-[var(--sidebar-fg)] hover:bg-[var(--sidebar-subtle)]/70'}`}
                         title="New File/Folder"
                       >
                         <Plus size={14} />
@@ -4965,23 +5061,18 @@ export default function App() {
                           <div key="explorer-menu">
                             <div className="fixed inset-0 z-[70]" onClick={() => setIsExplorerCreateMenuOpen(false)} />
                             <div
-                              
-                              
-                              
-                              className="absolute right-0 top-full mt-1 w-max min-w-[140px] bg-[#252526] border border-[#454545] rounded-none shadow-[0_2px_8px_rgba(0,0,0,0.5)] z-[80] overflow-hidden py-1"
+                              className="absolute right-0 top-full mt-1 w-max min-w-[140px] bg-[var(--sidebar-bg)] border border-[var(--sidebar-border)] rounded-sm shadow-[0_4px_12px_rgba(0,0,0,0.4)] z-[80] overflow-hidden py-1"
                             >
                               <button 
                                 onClick={() => { handleCreateFile(); setIsExplorerCreateMenuOpen(false); }}
-                                className="w-full px-3 py-1.5 flex items-center gap-2 text-left text-[11.5px] text-[#cccccc] hover:bg-[#007acc] hover:text-white transition-colors rounded-none font-inherit whitespace-nowrap"
+                                className="w-full px-3 py-1.5 flex items-center gap-2 text-left text-[11.5px] text-[var(--sidebar-fg)]/85 hover:bg-[var(--sidebar-accent)] hover:text-[var(--sidebar-accent-fg)] transition-colors rounded-none font-inherit whitespace-nowrap"
                               >
-                                
                                 <span className="leading-none pt-[1px] whitespace-nowrap">New File</span>
                               </button>
                               <button 
                                 onClick={() => { handleCreateFolder(); setIsExplorerCreateMenuOpen(false); }}
-                                className="w-full px-3 py-1.5 flex items-center gap-2 text-left text-[11.5px] text-[#cccccc] hover:bg-[#007acc] hover:text-white transition-colors rounded-none font-inherit whitespace-nowrap"
+                                className="w-full px-3 py-1.5 flex items-center gap-2 text-left text-[11.5px] text-[var(--sidebar-fg)]/85 hover:bg-[var(--sidebar-accent)] hover:text-[var(--sidebar-accent-fg)] transition-colors rounded-none font-inherit whitespace-nowrap"
                               >
-                                
                                 <span className="leading-none pt-[1px] whitespace-nowrap">New Folder</span>
                               </button>
                               <button 
@@ -4989,10 +5080,9 @@ export default function App() {
                                   setIsExplorerCreateMenuOpen(false); 
                                   handleDownloadProject(); 
                                 }}
-                                className="w-full px-3 py-1.5 flex items-center gap-2 text-left text-[11.5px] text-[#cccccc] hover:bg-[#007acc] hover:text-white transition-colors rounded-none font-inherit whitespace-nowrap"
+                                className="w-full px-3 py-1.5 flex items-center gap-2 text-left text-[11.5px] text-[var(--sidebar-fg)]/85 hover:bg-[var(--sidebar-accent)] hover:text-[var(--sidebar-accent-fg)] transition-colors rounded-none font-inherit whitespace-nowrap"
                                 title="Download Project"
                               >
-                                
                                 <span className="leading-none pt-[1px] whitespace-nowrap">Export ZIP</span>
                               </button>
                             </div>
@@ -5002,16 +5092,16 @@ export default function App() {
                     </div>
                   </div>
                 </div>
-                <div className={`custom-scrollbar bg-[#252526] pb-4 ${isBookmarksCollapsed ? 'flex-1 overflow-y-auto' : 'flex-[3] min-h-[150px] overflow-y-auto'}`}>
-                  <div className="pl-2 h-[22px] pr-3 flex items-center justify-between text-[#cccccc] hover:bg-white/[0.04] cursor-pointer group transition-colors border-t border-b border-[#2b2b2b]">
-                    <div className="flex items-center gap-1 font-bold text-[11px] tracking-wider opacity-100 transition-opacity">
-                      <ChevronDownIcon size={12} className="text-[#cccccc]" />
-                      <span className="select-none leading-none pt-[1px] text-[#bbbbbb] font-inherit">Workspace</span>
+                <div className={`custom-scrollbar bg-[var(--sidebar-bg)] pb-4 ${isBookmarksCollapsed ? 'flex-1 overflow-y-auto' : 'flex-[3] min-h-[150px] overflow-y-auto'}`}>
+                  <div className="pl-2 h-[24px] pr-3 flex items-center justify-between text-[var(--sidebar-fg)]/70 hover:bg-[var(--sidebar-subtle)]/30 cursor-pointer group transition-colors border-t border-b border-[var(--sidebar-border)]/40">
+                    <div className="flex items-center gap-1 font-bold tracking-wider opacity-100 transition-opacity">
+                      <ChevronDownIcon size={12} className="text-[var(--sidebar-fg)]/80" />
+                      <span className="select-none leading-none pt-[1px] text-[var(--sidebar-fg)]/85 uppercase tracking-wide font-inherit text-[10px] font-bold">Workspace</span>
                     </div>
                     <div className="flex items-center">
                       <button 
                         onClick={(e) => { e.stopPropagation(); setShowInlineFileSearch(!showInlineFileSearch); if(!showInlineFileSearch) setInlineFileSearchQuery(''); }}
-                        className="p-1 md:opacity-0 group-hover:opacity-100 hover:bg-white/10 rounded-none transition-all text-zinc-400 hover:text-white flex items-center justify-center shrink-0"
+                        className="p-1 md:opacity-0 group-hover:opacity-100 hover:bg-[var(--sidebar-subtle)]/60 rounded-sm transition-all text-[var(--sidebar-fg)]/60 hover:text-[var(--sidebar-fg)] flex items-center justify-center shrink-0"
                         title="Search Files"
                       >
                         <Search size={11} strokeWidth={2.5} />
@@ -5091,21 +5181,21 @@ export default function App() {
                 </div>
 
                 {/* Bookmarks Section */}
-                <div className={`flex flex-col bg-[#252526] overflow-hidden ${isBookmarksCollapsed ? 'shrink-0' : 'flex-1 min-h-[120px] border-t border-[#2b2b2b]'}`}>
+                <div className={`flex flex-col bg-[var(--sidebar-bg)] overflow-hidden ${isBookmarksCollapsed ? 'shrink-0' : 'flex-1 min-h-[120px] border-t border-[var(--sidebar-border)]/40'}`}>
                   <div 
                     onClick={() => setIsBookmarksCollapsed(!isBookmarksCollapsed)}
-                    className="pl-2 h-[22px] pr-3 flex items-center justify-between text-[#cccccc] hover:bg-white/[0.04] cursor-pointer group transition-colors border-b border-[#2b2b2b]"
+                    className="pl-2 h-[24px] pr-3 flex items-center justify-between text-[var(--sidebar-fg)]/70 hover:bg-[var(--sidebar-subtle)]/30 cursor-pointer group transition-colors border-b border-[var(--sidebar-border)]/40"
                   >
-                    <div className="flex items-center gap-1 font-bold text-[11px] tracking-wider">
-                      {isBookmarksCollapsed ? <ChevronRightIcon size={12} /> : <ChevronDownIcon size={12} />}
-                      <span className="select-none leading-none pt-[1px] text-[#bbbbbb] font-inherit">
+                    <div className="flex items-center gap-1 font-bold text-[10px] tracking-wider">
+                      {isBookmarksCollapsed ? <ChevronRightIcon size={12} className="text-[var(--sidebar-fg)]/80" /> : <ChevronDownIcon size={12} className="text-[var(--sidebar-fg)]/80" />}
+                      <span className="select-none leading-none pt-[1px] text-[var(--sidebar-fg)]/85 uppercase tracking-wide font-inherit font-bold">
                         Bookmarks 🔖 ({bookmarks.filter(b => b.projectId === activeProjectId).length})
                       </span>
                     </div>
                     {bookmarks.some(b => b.projectId === activeProjectId) && (
                       <button 
                         onClick={(e) => { e.stopPropagation(); handleClearAllBookmarks(); }}
-                        className="p-1 hover:bg-white/10 rounded-[2px] transition-all text-zinc-400 hover:text-[#f87171]"
+                        className="p-1 hover:bg-[var(--sidebar-subtle)]/60 rounded-sm transition-all text-[var(--sidebar-fg)]/60 hover:text-[#f87171]"
                         title="Clear All Bookmarks"
                       >
                         <Trash2 size={11} strokeWidth={2.5} />
@@ -5121,7 +5211,7 @@ export default function App() {
                           placeholder="Search bookmarks..."
                           value={bookmarkSearchTerm}
                           onChange={(e) => setBookmarkSearchTerm(e.target.value)}
-                          className="w-full bg-[#3c3c3c] text-[11px] text-white px-2 py-1 rounded-[2px] border border-transparent focus:border-blue-500 focus:outline-none font-inherit"
+                          className="w-full bg-[var(--sidebar-bg)] text-[11px] text-[var(--sidebar-fg)] px-2 py-1 rounded-sm border border-[var(--sidebar-border)] focus:border-[var(--sidebar-accent)] focus:outline-none font-inherit placeholder-[var(--sidebar-fg)]/30"
                         />
                       </div>
                       {(() => {
@@ -5133,7 +5223,7 @@ export default function App() {
 
                         if (filteredBookmarks.length === 0) {
                           return (
-                            <div className="px-4 py-3 text-[11px] text-[#858585] text-center font-inherit">
+                            <div className="px-4 py-3 text-[11px] text-[var(--sidebar-fg)]/50 text-center font-inherit">
                               {projectBookmarks.length === 0 ? "No bookmarks in this project." : "No matching bookmarks found."}
                             </div>
                           );
@@ -5152,7 +5242,7 @@ export default function App() {
                               onClick={() => handleFileOpen(filename)}
                               className="px-3 py-1 flex items-center gap-1.5 hover:bg-white/[0.02] cursor-pointer"
                             >
-                              <span className="text-[11px] text-[#cccccc] font-inherit font-medium truncate flex-1 flex items-center gap-1.5">
+                              <span className="text-[11px] text-[var(--sidebar-fg)]/80 font-inherit font-medium truncate flex-1 flex items-center gap-1.5">
                                 <span className="text-zinc-500 font-mono">📂</span>
                                 {filename.split('/').pop()}
                               </span>
@@ -5165,11 +5255,11 @@ export default function App() {
                                 <div 
                                   key={b.id}
                                   onClick={() => handleGoToBookmark(filename, b.lineNumber)}
-                                  className="pl-6 pr-3 py-1 flex items-center justify-between text-[11px] font-mono text-zinc-400 hover:text-white hover:bg-white/[0.04] cursor-pointer group/item select-none"
+                                  className="pl-6 pr-3 py-1 flex items-center justify-between text-[11px] font-mono text-[var(--sidebar-fg)]/50 hover:text-[var(--sidebar-fg)] hover:bg-white/[0.04] cursor-pointer group/item select-none"
                                 >
                                   <span className="truncate flex-1 flex items-center gap-2">
                                     <span className="text-[#FFD700] text-[9px]">Line {b.lineNumber}:</span>
-                                    <span className="text-[#bbbbbb] truncate text-[10px]">{b.lineContent}</span>
+                                    <span className="text-[var(--sidebar-fg)]/70 truncate text-[10px]">{b.lineContent}</span>
                                   </span>
                                   <button 
                                     onClick={(e) => { 
@@ -5191,6 +5281,7 @@ export default function App() {
                   )}
                 </div>
               </div>
+            </div>
 
               {/* Explorer Overlay Backdrop for Mobile */}
               {isExplorerOpen && (
@@ -5205,10 +5296,10 @@ export default function App() {
                 <div 
                   onMouseDown={startResizingExplorer}
                   onTouchStart={startResizingExplorer}
-                  className={`hidden w-4 -mx-2 bg-transparent cursor-col-resize transition-all z-20 relative group ${isResizingExplorer ? 'bg-accent/5' : ''} touch-none`}
+                  className={`flex w-6 md:w-4 -mx-3 md:-mx-2 bg-transparent cursor-col-resize transition-all z-[70] relative group ${isResizingExplorer ? 'bg-[var(--sidebar-accent)]/5' : ''} touch-none`}
                   title="Drag to resize explorer"
                 >
-                  <div className={`absolute inset-y-0 left-1/2 -translate-x-1/2 w-[1px] bg-white/5 group-hover:bg-accent/40 transition-colors ${isResizingExplorer ? 'bg-accent/60' : ''}`} />
+                  <div className={`absolute inset-y-0 left-1/2 -translate-x-1/2 w-[2px] bg-[var(--sidebar-border)]/60 group-hover:bg-[var(--sidebar-accent)] transition-colors ${isResizingExplorer ? 'bg-[var(--sidebar-accent)]' : ''}`} />
                   
                   {/* Fullscreen Toggle Button */}
                   <button 

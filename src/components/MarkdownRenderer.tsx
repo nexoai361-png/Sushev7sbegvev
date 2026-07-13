@@ -189,7 +189,7 @@ export const MarkdownPreview = React.memo(function MarkdownPreview({
   appThemeName: string;
   setAppThemeName: (theme: string) => void;
 }) {
-  const themeKeys = ['VS Code Dark', 'One Dark Pro', 'Dracula', 'Nord', 'Github Dark'];
+  const themeKeys = ['ReversX Studio', 'VS Code Dark', 'One Dark Pro', 'Dracula', 'Nord', 'Github Dark'];
 
   const handleCycleTheme = () => {
     const currentIndex = themeKeys.indexOf(appThemeName);
