@@ -67,6 +67,7 @@ import {
   FileCode,
   FileJson,
   File,
+  Bookmark as LucideBookmark,
   ChevronDown as ChevronDownIcon,
   ChevronRight as ChevronRightIcon,
   MoreVertical,
@@ -156,7 +157,10 @@ import { GithubExportModal } from './components/GithubExportModal';
 import { GithubImportModal } from './components/GithubImportModal';
 import { DeleteFileModal } from './components/DeleteFileModal';
 import { RenameFileModal } from './components/RenameFileModal';
+import { CopyFileModal } from './components/CopyFileModal';
+import { MoveFileModal } from './components/MoveFileModal';
 import { HelpModal } from './components/HelpModal';
+import { getOfficialIcon, VSCodeDefaultFileIcon } from './components/VSCodeIcons';
 import { Filesystem, Directory } from '@capacitor/filesystem';
 import { Share } from '@capacitor/share';
 import { Saf } from './lib/saf';
@@ -980,6 +984,12 @@ export default function App() {
   const [showRenameModal, setShowRenameModal] = useState(false);
   const [renameOldName, setRenameOldName] = useState('');
   const [renameNewName, setRenameNewName] = useState('');
+  const [showCopyModal, setShowCopyModal] = useState(false);
+  const [copySourcePath, setCopySourcePath] = useState('');
+  const [copyTargetPath, setCopyTargetPath] = useState('');
+  const [showMoveModal, setShowMoveModal] = useState(false);
+  const [moveSourcePath, setMoveSourcePath] = useState('');
+  const [moveTargetPath, setMoveTargetPath] = useState('');
   const [showDeleteModal, setShowDeleteModal] = useState(false);
   const [fileToDelete, setFileToDelete] = useState('');
   const [showHelpModal, setShowHelpModal] = useState(false);
@@ -1774,6 +1784,9 @@ export default function App() {
   const [explorerWidth, setExplorerWidth] = useState(260);
   const [isResizingExplorer, setIsResizingExplorer] = useState(false);
   const [isSidebarMinimized, setIsSidebarMinimized] = useState(false);
+  const [bookmarksHeight, setBookmarksHeight] = useState(200);
+  const [isResizingBookmarks, setIsResizingBookmarks] = useState(false);
+  const bookmarksRef = useRef<HTMLDivElement>(null);
 
   // ReversX v1 Agent States
   const [isAgentActive, setIsAgentActive] = useState(false);
@@ -2193,6 +2206,32 @@ export default function App() {
     document.body.style.cursor = 'col-resize';
   }, []);
 
+  const resizeBookmarks = useCallback((e: MouseEvent | TouchEvent) => {
+    if (isResizingBookmarks && bookmarksRef.current) {
+      const clientY = 'touches' in e ? e.touches[0].clientY : e.clientY;
+      const rect = bookmarksRef.current.getBoundingClientRect();
+      const newHeight = rect.bottom - clientY;
+      const minHeight = 40;
+      const maxHeight = window.innerHeight - 150;
+      if (newHeight > minHeight && newHeight < maxHeight) {
+        setBookmarksHeight(newHeight);
+      }
+    }
+  }, [isResizingBookmarks]);
+
+  const stopResizingBookmarks = useCallback(() => {
+    setIsResizingBookmarks(false);
+    document.body.style.cursor = 'default';
+  }, []);
+
+  const startResizingBookmarks = useCallback((e: React.MouseEvent | React.TouchEvent) => {
+    if (e.type !== 'touchstart') {
+      e.preventDefault();
+    }
+    setIsResizingBookmarks(true);
+    document.body.style.cursor = 'row-resize';
+  }, []);
+
   const stopResizingExplorer = useCallback(() => {
     setIsResizingExplorer(false);
     document.body.style.cursor = 'default';
@@ -2208,22 +2247,28 @@ export default function App() {
 
   useEffect(() => {
     const handleWindowMove = (e: MouseEvent | TouchEvent) => {
+      if (e.cancelable) {
+        e.preventDefault();
+      }
       if (isResizing) resize(e);
       if (isResizingExplorer) resizeExplorer(e);
+      if (isResizingBookmarks) resizeBookmarks(e);
       if (isResizingEditorSplit) resizeEditorSplit(e);
     };
 
     const handleWindowEnd = () => {
       if (isResizing) stopResizing();
       if (isResizingExplorer) stopResizingExplorer();
+      if (isResizingBookmarks) stopResizingBookmarks();
       if (isResizingEditorSplit) stopResizingEditorSplit();
     };
 
-    if (isResizing || isResizingExplorer || isResizingEditorSplit) {
+    if (isResizing || isResizingExplorer || isResizingBookmarks || isResizingEditorSplit) {
       window.addEventListener('mousemove', handleWindowMove);
       window.addEventListener('mouseup', handleWindowEnd);
       window.addEventListener('touchmove', handleWindowMove, { passive: false });
       window.addEventListener('touchend', handleWindowEnd);
+      window.addEventListener('touchcancel', handleWindowEnd);
     }
 
     return () => {
@@ -2231,8 +2276,9 @@ export default function App() {
       window.removeEventListener('mouseup', handleWindowEnd);
       window.removeEventListener('touchmove', handleWindowMove);
       window.removeEventListener('touchend', handleWindowEnd);
+      window.removeEventListener('touchcancel', handleWindowEnd);
     };
-  }, [isResizing, isResizingExplorer, isResizingEditorSplit, resize, resizeExplorer, resizeEditorSplit, stopResizing, stopResizingExplorer, stopResizingEditorSplit]);
+  }, [isResizing, isResizingExplorer, isResizingBookmarks, isResizingEditorSplit, resize, resizeExplorer, resizeBookmarks, resizeEditorSplit, stopResizing, stopResizingExplorer, stopResizingBookmarks, stopResizingEditorSplit]);
 
   const handleNameSubmit = useCallback(() => {
     if (!tempName.trim()) return;
@@ -3778,6 +3824,75 @@ export default function App() {
     setShowRenameModal(false);
   }, [renameOldName, renameNewName, files, activeFile]);
 
+  const handleCopyFile = useCallback((source: string) => {
+    setCopySourcePath(source);
+    setCopyTargetPath(source);
+    setShowCopyModal(true);
+  }, []);
+
+  const confirmCopyFile = useCallback(() => {
+    const source = copySourcePath;
+    const target = copyTargetPath.trim();
+    if (!target || target === source) {
+      setShowCopyModal(false);
+      return;
+    }
+    if (files[target]) {
+      alert('File already exists at destination!');
+      return;
+    }
+
+    setFiles(prev => {
+      const newFiles = { ...prev };
+      const sourceData = newFiles[source];
+      const targetLanguage = getLanguageFromPath(target);
+      newFiles[target] = { ...sourceData, language: targetLanguage };
+      return newFiles;
+    });
+    setShowCopyModal(false);
+  }, [copySourcePath, copyTargetPath, files]);
+
+  const handleMoveFile = useCallback((source: string) => {
+    setMoveSourcePath(source);
+    setMoveTargetPath(source);
+    setShowMoveModal(true);
+  }, []);
+
+  const confirmMoveFile = useCallback(() => {
+    const source = moveSourcePath;
+    const target = moveTargetPath.trim();
+    if (!target || target === source) {
+      setShowMoveModal(false);
+      return;
+    }
+    if (files[target]) {
+      alert('File already exists at destination!');
+      return;
+    }
+
+    setFiles(prev => {
+      const newFiles = { ...prev };
+      const sourceData = newFiles[source];
+      const targetLanguage = getLanguageFromPath(target);
+      newFiles[target] = { ...sourceData, language: targetLanguage };
+      delete newFiles[source];
+      return newFiles;
+    });
+    
+    // Update active file if it was moved
+    if (activeFile === source) {
+      setActiveFile(target);
+    }
+    
+    // Update open files list if the moved file was open
+    setOpenFiles(prev => prev.map(f => f === source ? target : f));
+    
+    // Also update editor panes
+    setEditorPanes(prev => prev.map(p => p === source ? target : p));
+
+    setShowMoveModal(false);
+  }, [moveSourcePath, moveTargetPath, files, activeFile]);
+
   const handleDeleteFile = useCallback((name: string) => {
     if (Object.keys(files).length <= 1) {
       alert('Cannot delete the last file.');
@@ -4987,7 +5102,7 @@ export default function App() {
                   )}
                 <div className="h-9 flex items-center justify-between px-4 bg-[var(--sidebar-bg)] shrink-0 select-none border-b border-[var(--sidebar-border)]/40">
                   <div className="flex items-center gap-2">
-                    <span className="text-[11px] font-bold text-[var(--sidebar-fg)] opacity-80 uppercase tracking-wider font-inherit select-none">Explorer</span>
+                    <span className="text-[11px] font-bold text-[var(--sidebar-fg)] opacity-80 uppercase tracking-wider font-inherit select-none">EXPLORER</span>
                   </div>
                   <div className="flex items-center gap-0.5">
                     <div className="relative">
@@ -5092,11 +5207,11 @@ export default function App() {
                     </div>
                   </div>
                 </div>
-                <div className={`custom-scrollbar bg-[var(--sidebar-bg)] pb-4 ${isBookmarksCollapsed ? 'flex-1 overflow-y-auto' : 'flex-[3] min-h-[150px] overflow-y-auto'}`}>
-                  <div className="pl-2 h-[24px] pr-3 flex items-center justify-between text-[var(--sidebar-fg)]/70 hover:bg-[var(--sidebar-subtle)]/30 cursor-pointer group transition-colors border-t border-b border-[var(--sidebar-border)]/40">
+                <div className="flex-1 min-h-0 flex flex-col overflow-y-auto custom-scrollbar pb-4 bg-[var(--sidebar-bg)]">
+                  <div className="pl-2 h-[24px] pr-3 flex items-center justify-between text-[var(--sidebar-fg)]/70 hover:bg-[var(--sidebar-subtle)]/30 cursor-pointer group transition-colors border-t border-b border-[var(--sidebar-border)]/40 shrink-0">
                     <div className="flex items-center gap-1 font-bold tracking-wider opacity-100 transition-opacity">
                       <ChevronDownIcon size={12} className="text-[var(--sidebar-fg)]/80" />
-                      <span className="select-none leading-none pt-[1px] text-[var(--sidebar-fg)]/85 uppercase tracking-wide font-inherit text-[10px] font-bold">Workspace</span>
+                      <span className="select-none leading-none pt-[1px] text-[var(--sidebar-fg)]/85 uppercase tracking-wide font-inherit text-[10px] font-bold">WORKSPACE</span>
                     </div>
                     <div className="flex items-center">
                       <button 
@@ -5166,6 +5281,8 @@ export default function App() {
                           handleRenameFile={handleRenameFile}
                           handleDeleteFile={handleDeleteFile}
                           handleDownloadFile={handleDownloadFile}
+                          handleCopyFile={handleCopyFile}
+                          handleMoveFile={handleMoveFile}
                           depth={0}
                           inlineCreatingType={inlineCreatingType}
                           inlineCreatingParent={inlineCreatingParent}
@@ -5181,15 +5298,29 @@ export default function App() {
                 </div>
 
                 {/* Bookmarks Section */}
-                <div className={`flex flex-col bg-[var(--sidebar-bg)] overflow-hidden ${isBookmarksCollapsed ? 'shrink-0' : 'flex-1 min-h-[120px] border-t border-[var(--sidebar-border)]/40'}`}>
+                <div 
+                  ref={bookmarksRef}
+                  style={{ height: isBookmarksCollapsed ? '24px' : `${bookmarksHeight}px` }}
+                  className={`flex flex-col bg-[var(--sidebar-bg)] overflow-hidden shrink-0 border-t border-[var(--sidebar-border)]/40 relative`}
+                >
+                  {/* Bookmarks Section Resizer Handle */}
+                  {!isBookmarksCollapsed && (
+                    <div
+                      onMouseDown={startResizingBookmarks}
+                      onTouchStart={startResizingBookmarks}
+                      className={`absolute top-0 inset-x-0 h-1.5 cursor-row-resize z-[80] select-none touch-none hover:bg-[var(--sidebar-accent)]/20 transition-all ${isResizingBookmarks ? 'bg-[var(--sidebar-accent)]/30' : ''}`}
+                      title="Drag to resize bookmarks"
+                    />
+                  )}
+
                   <div 
                     onClick={() => setIsBookmarksCollapsed(!isBookmarksCollapsed)}
-                    className="pl-2 h-[24px] pr-3 flex items-center justify-between text-[var(--sidebar-fg)]/70 hover:bg-[var(--sidebar-subtle)]/30 cursor-pointer group transition-colors border-b border-[var(--sidebar-border)]/40"
+                    className="pl-2 h-[24px] pr-3 flex items-center justify-between text-[var(--sidebar-fg)]/70 hover:bg-[var(--sidebar-subtle)]/30 cursor-pointer group transition-colors border-b border-[var(--sidebar-border)]/40 shrink-0"
                   >
                     <div className="flex items-center gap-1 font-bold text-[10px] tracking-wider">
                       {isBookmarksCollapsed ? <ChevronRightIcon size={12} className="text-[var(--sidebar-fg)]/80" /> : <ChevronDownIcon size={12} className="text-[var(--sidebar-fg)]/80" />}
                       <span className="select-none leading-none pt-[1px] text-[var(--sidebar-fg)]/85 uppercase tracking-wide font-inherit font-bold">
-                        Bookmarks 🔖 ({bookmarks.filter(b => b.projectId === activeProjectId).length})
+                        BOOKMARKS
                       </span>
                     </div>
                     {bookmarks.some(b => b.projectId === activeProjectId) && (
@@ -5236,46 +5367,67 @@ export default function App() {
                           groups[b.filename].push(b);
                         });
 
-                        return Object.entries(groups).map(([filename, fileBookmarks]) => (
-                          <div key={filename} className="mb-2">
-                            <div 
-                              onClick={() => handleFileOpen(filename)}
-                              className="px-3 py-1 flex items-center gap-1.5 hover:bg-white/[0.02] cursor-pointer"
-                            >
-                              <span className="text-[11px] text-[var(--sidebar-fg)]/80 font-inherit font-medium truncate flex-1 flex items-center gap-1.5">
-                                <span className="text-zinc-500 font-mono">📂</span>
-                                {filename.split('/').pop()}
-                              </span>
-                              <span className="text-[9px] px-1 bg-white/5 text-zinc-400 rounded-full font-inherit">
-                                {fileBookmarks.length}
-                              </span>
-                            </div>
-                            <div className="flex flex-col">
-                              {fileBookmarks.sort((a,b) => a.lineNumber - b.lineNumber).map(b => (
-                                <div 
-                                  key={b.id}
-                                  onClick={() => handleGoToBookmark(filename, b.lineNumber)}
-                                  className="pl-6 pr-3 py-1 flex items-center justify-between text-[11px] font-mono text-[var(--sidebar-fg)]/50 hover:text-[var(--sidebar-fg)] hover:bg-white/[0.04] cursor-pointer group/item select-none"
-                                >
-                                  <span className="truncate flex-1 flex items-center gap-2">
-                                    <span className="text-[#FFD700] text-[9px]">Line {b.lineNumber}:</span>
-                                    <span className="text-[var(--sidebar-fg)]/70 truncate text-[10px]">{b.lineContent}</span>
-                                  </span>
-                                  <button 
-                                    onClick={(e) => { 
-                                      e.stopPropagation(); 
-                                      handleToggleBookmark(b.filename, b.lineNumber, ''); 
+                        return Object.entries(groups).map(([filename, fileBookmarks]) => {
+                          const fileBaseName = filename.split('/').pop() || '';
+                          const dirPath = filename.substring(0, filename.lastIndexOf('/')) || '';
+                          const officialIconUrl = getOfficialIcon(fileBaseName);
+                          const extension = fileBaseName.split('.').pop()?.toLowerCase() || '';
+
+                          return (
+                            <div key={filename} className="mb-2">
+                              <div 
+                                onClick={() => handleFileOpen(filename)}
+                                className="px-3 h-[22px] flex items-center gap-1.5 hover:bg-[var(--sidebar-subtle)]/30 cursor-pointer text-[11.5px] font-sans font-medium text-[var(--sidebar-fg)]/85 truncate"
+                              >
+                                {officialIconUrl ? (
+                                  <img 
+                                    src={officialIconUrl} 
+                                    alt={extension} 
+                                    className="w-3.5 h-3.5 object-contain shrink-0" 
+                                    referrerPolicy="no-referrer"
+                                    onError={(e) => {
+                                      (e.target as HTMLImageElement).style.display = 'none';
                                     }}
-                                    className="p-0.5 opacity-0 group-hover/item:opacity-100 hover:bg-white/10 rounded text-zinc-400 hover:text-red-400 transition-all ml-1 shrink-0"
-                                    title="Delete bookmark"
+                                  />
+                                ) : (
+                                  <VSCodeDefaultFileIcon size={14} />
+                                )}
+                                <span className="truncate flex-1 flex items-baseline gap-1.5">
+                                  <span>{fileBaseName}</span>
+                                  {dirPath && <span className="text-[9.5px] text-[var(--sidebar-fg)]/40 font-normal truncate">{dirPath}</span>}
+                                </span>
+                                <span className="text-[9px] px-1.5 py-[0.5px] bg-zinc-800 text-zinc-400 rounded font-inherit shrink-0">
+                                  {fileBookmarks.length}
+                                </span>
+                              </div>
+                              <div className="flex flex-col">
+                                {fileBookmarks.sort((a,b) => a.lineNumber - b.lineNumber).map(b => (
+                                  <div 
+                                    key={b.id}
+                                    onClick={() => handleGoToBookmark(filename, b.lineNumber)}
+                                    className="pl-7 pr-3 h-[22px] py-1 flex items-center justify-between text-[11px] font-mono text-[var(--sidebar-fg)]/60 hover:text-[var(--sidebar-fg)] hover:bg-[var(--sidebar-subtle)]/30 cursor-pointer group/item select-none"
                                   >
-                                    <X size={10} />
-                                  </button>
-                                </div>
-                              ))}
+                                    <span className="truncate flex-1 flex items-center gap-2">
+                                      <LucideBookmark size={11} className="text-sky-400 shrink-0 fill-sky-400" />
+                                      <span className="text-zinc-500 text-[10px]">{b.lineNumber}:</span>
+                                      <span className="text-[var(--sidebar-fg)]/80 truncate text-[10.5px]">{b.lineContent.trim() || '(empty line)'}</span>
+                                    </span>
+                                    <button 
+                                      onClick={(e) => { 
+                                        e.stopPropagation(); 
+                                        handleToggleBookmark(b.filename, b.lineNumber, ''); 
+                                      }}
+                                      className="p-0.5 opacity-0 group-hover/item:opacity-100 hover:bg-white/10 rounded text-zinc-400 hover:text-red-400 transition-all ml-1 shrink-0"
+                                      title="Delete bookmark"
+                                    >
+                                      <X size={10} />
+                                    </button>
+                                  </div>
+                                ))}
+                              </div>
                             </div>
-                          </div>
-                        ));
+                          );
+                        });
                       })()}
                     </div>
                   )}
@@ -6098,6 +6250,24 @@ export default function App() {
         renameNewName={renameNewName}
         setRenameNewName={setRenameNewName}
         confirmRenameFile={confirmRenameFile}
+      />
+
+      <CopyFileModal
+        isOpen={showCopyModal}
+        onClose={() => setShowCopyModal(false)}
+        sourcePath={copySourcePath}
+        copyNewName={copyTargetPath}
+        setCopyNewName={setCopyTargetPath}
+        confirmCopyFile={confirmCopyFile}
+      />
+
+      <MoveFileModal
+        isOpen={showMoveModal}
+        onClose={() => setShowMoveModal(false)}
+        sourcePath={moveSourcePath}
+        moveNewName={moveTargetPath}
+        setMoveNewName={setMoveTargetPath}
+        confirmMoveFile={confirmMoveFile}
       />
       <React.Fragment>
         {showQuickOpen && (

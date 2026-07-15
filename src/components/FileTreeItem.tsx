@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { FilePlus, FolderPlus } from 'lucide-react';
+import { FilePlus, FolderPlus, Copy, Move } from 'lucide-react';
 import { useIcons } from '../lib/icons';
 import { TreeNodeType, useFileIconSize } from '../types';
 import { 
@@ -79,6 +79,8 @@ interface FileTreeItemProps {
   handleRenameFile: (path: string) => void;
   handleDeleteFile: (path: string) => void;
   handleDownloadFile: (path: string) => void;
+  handleCopyFile: (path: string) => void;
+  handleMoveFile: (path: string) => void;
   depth?: number;
   inlineCreatingType: 'file' | 'folder' | null;
   inlineCreatingParent: string | null;
@@ -98,6 +100,8 @@ export const FileTreeItem = React.memo(({
   handleRenameFile, 
   handleDeleteFile, 
   handleDownloadFile, 
+  handleCopyFile,
+  handleMoveFile,
   depth = 0,
   inlineCreatingType,
   inlineCreatingParent,
@@ -199,6 +203,8 @@ export const FileTreeItem = React.memo(({
                 handleRenameFile={handleRenameFile}
                 handleDeleteFile={handleDeleteFile}
                 handleDownloadFile={handleDownloadFile}
+                handleCopyFile={handleCopyFile}
+                handleMoveFile={handleMoveFile}
                 depth={depth + 1}
                 inlineCreatingType={inlineCreatingType}
                 inlineCreatingParent={inlineCreatingParent}
@@ -301,6 +307,28 @@ export const FileTreeItem = React.memo(({
                 >
                   <Edit3 size={11} />
                   Rename
+                </button>
+                <button
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    handleCopyFile(name);
+                    setActiveFileMenu(null);
+                  }}
+                  className="w-full px-3 py-1.5 text-left text-[11px] text-[var(--sidebar-fg)]/85 hover:text-[var(--sidebar-accent-fg)] hover:bg-[var(--sidebar-accent)] flex items-center gap-2 transition-colors rounded-none font-inherit whitespace-nowrap"
+                >
+                  <Copy size={11} />
+                  Copy File
+                </button>
+                <button
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    handleMoveFile(name);
+                    setActiveFileMenu(null);
+                  }}
+                  className="w-full px-3 py-1.5 text-left text-[11px] text-[var(--sidebar-fg)]/85 hover:text-[var(--sidebar-accent-fg)] hover:bg-[var(--sidebar-accent)] flex items-center gap-2 transition-colors rounded-none font-inherit whitespace-nowrap"
+                >
+                  <Move size={11} />
+                  Move File
                 </button>
                 <button
                   onClick={(e) => {
