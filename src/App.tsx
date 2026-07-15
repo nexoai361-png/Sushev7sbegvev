@@ -6259,6 +6259,7 @@ export default function App() {
         copyNewName={copyTargetPath}
         setCopyNewName={setCopyTargetPath}
         confirmCopyFile={confirmCopyFile}
+        existingPaths={Object.keys(files)}
       />
 
       <MoveFileModal
@@ -6268,6 +6269,7 @@ export default function App() {
         moveNewName={moveTargetPath}
         setMoveNewName={setMoveTargetPath}
         confirmMoveFile={confirmMoveFile}
+        existingPaths={Object.keys(files)}
       />
       <React.Fragment>
         {showQuickOpen && (
