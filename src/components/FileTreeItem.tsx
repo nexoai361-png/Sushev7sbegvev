@@ -1,6 +1,45 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { FilePlus, FolderPlus, Copy, Move } from 'lucide-react';
+import { motion, AnimatePresence } from 'motion/react';
 import { useIcons } from '../lib/icons';
+
+const FolderSkeletonLoader = ({ depth, fileIconSize }: { depth: number; fileIconSize: number }) => {
+  return (
+    <div className="flex flex-col w-full py-0.5 select-none pointer-events-none gap-0.5">
+      {Array.from({ length: 2 }).map((_, idx) => (
+        <motion.div
+          key={idx}
+          initial={{ opacity: 0, x: -8 }}
+          animate={{ opacity: 0.45, x: 0 }}
+          exit={{ opacity: 0, x: 8 }}
+          transition={{ duration: 0.2, delay: idx * 0.05 }}
+          className="w-full flex items-center gap-1.5 h-[22px]"
+          style={{ paddingLeft: `${Math.max(8, (depth + 1) * 12 + 28)}px` }}
+        >
+          {/* Skeleton Icon */}
+          <div 
+            className="rounded-[2px] bg-[var(--sidebar-fg)]/20 shrink-0 relative overflow-hidden" 
+            style={{ width: fileIconSize, height: fileIconSize }}
+          >
+            <motion.div 
+              className="absolute inset-0 bg-gradient-to-r from-transparent via-white/10 to-transparent"
+              animate={{ x: ['-100%', '100%'] }}
+              transition={{ repeat: Infinity, duration: 1.2, ease: 'linear' }}
+            />
+          </div>
+          {/* Skeleton Text */}
+          <div className="h-2 bg-[var(--sidebar-fg)]/15 rounded-[1px] relative overflow-hidden w-24">
+            <motion.div 
+              className="absolute inset-0 bg-gradient-to-r from-transparent via-white/10 to-transparent"
+              animate={{ x: ['-100%', '100%'] }}
+              transition={{ repeat: Infinity, duration: 1.2, ease: 'linear' }}
+            />
+          </div>
+        </motion.div>
+      ))}
+    </div>
+  );
+};
 import { TreeNodeType, useFileIconSize } from '../types';
 import { 
   VSCodeDefaultFileIcon, 
@@ -112,7 +151,23 @@ export const FileTreeItem = React.memo(({
   onInitiateInlineCreateInFolder
 }: FileTreeItemProps) => {
   const [isOpen, setIsOpen] = useState(true);
+  const [isLoading, setIsLoading] = useState(false);
   const fileIconSize = useFileIconSize();
+
+  useEffect(() => {
+    let timer: NodeJS.Timeout;
+    if (isOpen) {
+      setIsLoading(true);
+      timer = setTimeout(() => {
+        setIsLoading(false);
+      }, 300); // 300ms of sleek modern loader transition
+    } else {
+      setIsLoading(false);
+    }
+    return () => {
+      if (timer) clearTimeout(timer);
+    };
+  }, [isOpen]);
 
   const {
      FolderOpen, ChevronDownIcon, ChevronRightIcon, File, FileJson, ImageIcon, Edit3, Trash2, MoreVertical, Download
@@ -176,47 +231,61 @@ export const FileTreeItem = React.memo(({
           </div>
         </div>
 
-        {isOpen && (
-          <>
-            {inlineCreatingType && inlineCreatingParent === node.path && (
-              <InlineCreationInput 
-                type={inlineCreatingType}
-                depth={depth + 1}
-                value={inlineCreatingName}
-                onChange={setInlineCreatingName}
-                onConfirm={onConfirmInlineCreate}
-                onCancel={onCancelInlineCreate}
-              />
-            )}
+        <AnimatePresence initial={false}>
+          {isOpen && (
+            <motion.div
+              initial={{ opacity: 0, height: 0 }}
+              animate={{ opacity: 1, height: 'auto' }}
+              exit={{ opacity: 0, height: 0 }}
+              transition={{ duration: 0.25, ease: 'easeInOut' }}
+              className="overflow-hidden w-full flex flex-col"
+            >
+              {isLoading ? (
+                <FolderSkeletonLoader depth={depth} fileIconSize={fileIconSize} />
+              ) : (
+                <>
+                  {inlineCreatingType && inlineCreatingParent === node.path && (
+                    <InlineCreationInput 
+                      type={inlineCreatingType}
+                      depth={depth + 1}
+                      value={inlineCreatingName}
+                      onChange={setInlineCreatingName}
+                      onConfirm={onConfirmInlineCreate}
+                      onCancel={onCancelInlineCreate}
+                    />
+                  )}
 
-            {Object.values(node.children).sort((a: any, b: any) => {
-               if (a.type !== b.type) return a.type === 'folder' ? -1 : 1;
-               return a.name.localeCompare(b.name);
-            }).map((child: any) => (
-              <FileTreeItem 
-                key={child.path}
-                node={child}
-                activeFile={activeFile}
-                activeFileMenu={activeFileMenu}
-                handleFileOpen={handleFileOpen}
-                setActiveFileMenu={setActiveFileMenu}
-                handleRenameFile={handleRenameFile}
-                handleDeleteFile={handleDeleteFile}
-                handleDownloadFile={handleDownloadFile}
-                handleCopyFile={handleCopyFile}
-                handleMoveFile={handleMoveFile}
-                depth={depth + 1}
-                inlineCreatingType={inlineCreatingType}
-                inlineCreatingParent={inlineCreatingParent}
-                inlineCreatingName={inlineCreatingName}
-                setInlineCreatingName={setInlineCreatingName}
-                onConfirmInlineCreate={onConfirmInlineCreate}
-                onCancelInlineCreate={onCancelInlineCreate}
-                onInitiateInlineCreateInFolder={onInitiateInlineCreateInFolder}
-              />
-            ))}
-          </>
-        )}
+                  {Object.values(node.children).sort((a: any, b: any) => {
+                     if (a.type !== b.type) return a.type === 'folder' ? -1 : 1;
+                     return a.name.localeCompare(b.name);
+                  }).map((child: any) => (
+                    <FileTreeItem 
+                      key={child.path}
+                      node={child}
+                      activeFile={activeFile}
+                      activeFileMenu={activeFileMenu}
+                      handleFileOpen={handleFileOpen}
+                      setActiveFileMenu={setActiveFileMenu}
+                      handleRenameFile={handleRenameFile}
+                      handleDeleteFile={handleDeleteFile}
+                      handleDownloadFile={handleDownloadFile}
+                      handleCopyFile={handleCopyFile}
+                      handleMoveFile={handleMoveFile}
+                      depth={depth + 1}
+                      inlineCreatingType={inlineCreatingType}
+                      inlineCreatingParent={inlineCreatingParent}
+                      inlineCreatingName={inlineCreatingName}
+                      setInlineCreatingName={setInlineCreatingName}
+                      onConfirmInlineCreate={onConfirmInlineCreate}
+                      onCancelInlineCreate={onCancelInlineCreate}
+                      onInitiateInlineCreateInFolder={onInitiateInlineCreateInFolder}
+                    />
+                  ))}
+                </>
+              )}
+            </motion.div>
+          )}
+        </AnimatePresence>
       </div>
     );
   }

@@ -54,6 +54,7 @@ interface MemoizedCodeEditorProps {
   lineHeight?: number;
   splitScreen?: boolean;
   isSplitPane?: boolean;
+  isBottomPane?: boolean;
   onToggleSplit?: () => void;
   onClosePane?: () => void;
   onSetEditorTheme?: (name: string) => void;
@@ -108,6 +109,7 @@ export const MemoizedCodeEditor = React.memo(({
   lineHeight = 1.5,
   splitScreen = false,
   isSplitPane = false,
+  isBottomPane = true,
   onToggleSplit,
   onClosePane,
   onSetEditorTheme,
@@ -994,11 +996,27 @@ Instructions: Modify the code according to the task. Return ONLY the modified co
                   >
                     Show Preview
                   </div>
+                  {onToggleSplit && (
+                    <div 
+                      onClick={() => { onToggleSplit(); setShowMoreMenu(false); }}
+                      className="px-3 py-2 text-[#cccccc] text-[13px] flex items-center rounded cursor-pointer whitespace-nowrap transition-all duration-[50ms] hover:bg-[#094771] hover:text-white active:bg-[#094771]/70 outline-none"
+                    >
+                      Split Editor
+                    </div>
+                  )}
+                  {(!isSplitPane || isBottomPane) && (
+                    <div 
+                      onClick={() => { setIsKeyboardToolbarHidden(!isKeyboardToolbarHidden); setShowMoreMenu(false); }}
+                      className="px-3 py-2 text-[#cccccc] text-[13px] flex items-center rounded cursor-pointer whitespace-nowrap transition-all duration-[50ms] hover:bg-[#094771] hover:text-white active:bg-[#094771]/70 outline-none"
+                    >
+                      {isKeyboardToolbarHidden ? 'Show Keyboard Toolbar' : 'Hide Keyboard Toolbar'}
+                    </div>
+                  )}
                   <div 
                     onClick={() => { setWordWrap(!wordWrap); setShowMoreMenu(false); }}
                     className="px-3 py-2 text-[#cccccc] text-[13px] flex items-center rounded cursor-pointer whitespace-nowrap transition-all duration-[50ms] hover:bg-[#094771] hover:text-white active:bg-[#094771]/70 outline-none"
                   >
-                    Wordwarp - On/off
+                    {wordWrap ? 'Word Wrap – Disable' : 'Word Wrap – Enable'}
                   </div>
                 </div>
               </>
@@ -1204,7 +1222,7 @@ Instructions: Modify the code according to the task. Return ONLY the modified co
               </div>
             )}
             {/* Professional Minimalist Mobile Keyboard Toolbar */}
-      {!isKeyboardToolbarHidden && (
+      {!isKeyboardToolbarHidden && (!isSplitPane || isBottomPane) && (
         <MobileKeyboardToolbar 
           onAction={handleKeyboardAction}
           onInsert={insertText}
@@ -1219,16 +1237,6 @@ Instructions: Modify the code according to the task. Return ONLY the modified co
           onToggleShift={() => setIsShiftActive(prev => !prev)}
           onToggleAlt={() => setIsAltActive(prev => !prev)}
         />
-      )}
-
-      {isKeyboardToolbarHidden && (
-        <button 
-          onClick={() => setIsKeyboardToolbarHidden(false)}
-          className="fixed bottom-20 right-4 w-10 h-10 rounded-full bg-accent/20 border border-accent/40 text-accent flex items-center justify-center z-50 backdrop-blur-sm"
-          title="Show Keyboard Toolbar"
-        >
-          <SquareTerminal size={20} />
-        </button>
       )}
     </div>
 

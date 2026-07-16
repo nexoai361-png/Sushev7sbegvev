@@ -858,6 +858,17 @@ export default function App() {
   const [files, setFiles] = useState<Record<string, { code: string, language: string }>>({});
   const [previewFiles, setPreviewFiles] = useState<Record<string, { code: string, language: string }>>({});
   const [activeFile, setActiveFile] = useState<string>('');
+  const [isFileLoading, setIsFileLoading] = useState(false);
+
+  useEffect(() => {
+    if (activeFile) {
+      setIsFileLoading(true);
+      const timer = setTimeout(() => {
+        setIsFileLoading(false);
+      }, 300); // smooth 300ms loading effect
+      return () => clearTimeout(timer);
+    }
+  }, [activeFile]);
   const [activeFileSecondary, setActiveFileSecondary] = useState<string | null>(null);
   const [editorPanes, setEditorPanes] = useState<string[]>([]);
   const [paneWidths, setPaneWidths] = useState<number[]>([100]);
@@ -882,27 +893,28 @@ export default function App() {
   const handlePaneResize = useCallback((e: MouseEvent | TouchEvent) => {
     if (isResizingPane === null) return;
     
-    const clientX = 'touches' in e ? e.touches[0].clientX : e.clientX;
-    const container = document.getElementById('main-editor-container');
+    const clientY = 'touches' in e ? e.touches[0].clientY : e.clientY;
+    const container = document.getElementById('editor-panes-container');
     if (!container) return;
 
     const rect = container.getBoundingClientRect();
-    const x = clientX - rect.left;
-    const totalWidth = rect.width;
-    const percentage = (x / totalWidth) * 100;
+    const y = clientY - rect.top;
+    const totalHeight = rect.height;
+    if (totalHeight <= 0) return;
+    const percentage = (y / totalHeight) * 100;
 
     setPaneWidths(prev => {
       const next = [...prev];
       const i = isResizingPane;
       
       // Calculate current cumulative percentage up to the pane before the handle
-      let leftCumulative = 0;
-      for (let j = 0; j < i; j++) leftCumulative += next[j];
+      let topCumulative = 0;
+      for (let j = 0; j < i; j++) topCumulative += next[j];
       
-      const minWidth = 10; // 10% minimum width
-      const delta = percentage - (leftCumulative + next[i]);
+      const minHeight = 10; // 10% minimum height
+      const delta = percentage - (topCumulative + next[i]);
       
-      if (next[i] + delta > minWidth && next[i+1] - delta > minWidth) {
+      if (next[i] + delta > minHeight && next[i+1] - delta > minHeight) {
         next[i] += delta;
         next[i+1] -= delta;
       }
@@ -5246,7 +5258,25 @@ export default function App() {
                     </div>
                   )}
 
-                  <div className="flex flex-col w-full">
+                  <div className="flex flex-col w-full relative">
+                    {/* Minimalist Slide Loading Progress Indicator */}
+                    {isFileLoading && (
+                      <div className="h-[1.5px] w-full bg-transparent overflow-hidden relative shrink-0">
+                        <motion.div 
+                          className="absolute h-full bg-[#007acc]"
+                          initial={{ left: '-100%', width: '40%' }}
+                          animate={{ 
+                            left: ['-100%', '100%'],
+                            width: ['30%', '50%', '30%']
+                          }}
+                          transition={{ 
+                            duration: 0.8, 
+                            ease: 'easeInOut',
+                            repeat: Infinity 
+                          }}
+                        />
+                      </div>
+                    )}
                     {inlineCreatingType && inlineCreatingParent === '' && (
                       <InlineCreationInput 
                         type={inlineCreatingType}
@@ -5690,14 +5720,20 @@ export default function App() {
                     </div>
                   </div>
                 ) : (
-                <div className="flex-1 flex flex-row overflow-hidden border-r border-[#2b2b2b]">
-                  {editorPanes.map((paneFile, idx) => (
-                    <React.Fragment key={`${idx}-${paneFile}`}>
-                      <div 
-                        className={`flex flex-col overflow-hidden relative z-10 transition-shadow ${focusedPaneIndex === idx ? 'ring-1 ring-accent/30 shadow-[0_0_20px_rgba(0,255,65,0.05)]' : ''}`}
-                        style={{ width: `${paneWidths[idx]}%` }}
-                        onClickCapture={() => setFocusedPaneIndex(idx)}
-                      >
+                <div id="editor-panes-container" className="flex-1 flex flex-col overflow-hidden border-r border-[#2b2b2b]">
+                  {editorPanes.map((paneFile, idx) => {
+                    const paneHeight = editorPanes.length === 1 
+                      ? '100%' 
+                      : (paneWidths[idx] !== undefined && paneWidths.length === editorPanes.length) 
+                        ? `${paneWidths[idx]}%` 
+                        : `${100 / editorPanes.length}%`;
+                    return (
+                      <React.Fragment key={`${idx}-${paneFile}`}>
+                        <div 
+                          className={`flex flex-col overflow-hidden relative z-10 transition-shadow w-full ${focusedPaneIndex === idx ? 'ring-1 ring-accent/30 shadow-[0_0_20px_rgba(0,255,65,0.05)]' : ''}`}
+                          style={{ height: paneHeight, flex: `0 0 ${paneHeight}` }}
+                          onClickCapture={() => setFocusedPaneIndex(idx)}
+                        >
                         <MemoizedCodeEditor 
                           code={files[paneFile]?.code || ''} 
                           language={files[paneFile]?.language || 'text'} 
@@ -5718,6 +5754,7 @@ export default function App() {
                           fontFamily={editorFontFamily}
                           splitScreen={isSplitScreen && editorPanes.length === 1}
                           isSplitPane={editorPanes.length > 1}
+                          isBottomPane={idx === editorPanes.length - 1}
                           onToggleSplit={handleSplit}
                           onClosePane={() => handleClosePane(idx)}
                           editorThemeName={editorThemeName}
@@ -5760,14 +5797,15 @@ export default function App() {
                         <div 
                           onMouseDown={() => startResizingPane(idx)}
                           onTouchStart={() => startResizingPane(idx)}
-                          className={`flex w-4 bg-transparent cursor-col-resize transition-all z-20 items-center justify-center group -mx-2 touch-none ${isResizingPane === idx ? 'bg-accent/5' : ''}`}
+                          className={`flex h-4 w-full bg-transparent cursor-row-resize transition-all z-20 items-center justify-center group -my-2 touch-none ${isResizingPane === idx ? 'bg-accent/5' : ''}`}
                           title="Drag to resize panes"
                         >
-                          <div className={`h-full transition-all duration-150 ${isResizingPane === idx ? 'w-[2px] bg-[#007acc] shadow-[0_0_12px_rgba(0,122,204,0.6)]' : 'w-[1px] bg-background group-hover:bg-[#007acc]/40'}`} />
+                          <div className={`w-full transition-all duration-150 ${isResizingPane === idx ? 'h-[2px] bg-[#007acc] shadow-[0_0_12px_rgba(0,122,204,0.6)]' : 'h-[1px] bg-background group-hover:bg-[#007acc]/40'}`} />
                         </div>
                       )}
                     </React.Fragment>
-                  ))}
+                    );
+                  })}
                 </div>
                 )}
 
