@@ -150,6 +150,7 @@ import { ShortcutsCheatSheet } from './components/ShortcutsCheatSheet';
 import { AttachmentEditorModal } from './components/AttachmentEditorModal';
 import { ChatMessage } from './components/ChatMessage';
 import { MemoizedCodeEditor } from './components/MemoizedCodeEditor';
+import { VSCodeBrowser } from './components/VSCodeBrowser';
 import { SnippetEditorModal } from './components/SnippetEditorModal';
 import { FileTreeItem, InlineCreationInput } from './components/FileTreeItem';
 import { SettingsModal } from './components/SettingsModal';
@@ -5858,24 +5859,13 @@ export default function App() {
                     <div className="w-12 h-1 bg-white/10 rounded-full" />
                   </div>
                 )}
-                {isMarkdownFile ? (
-                  <div className="w-full h-full overflow-hidden flex flex-col">
-                    <React.Suspense fallback={<div className="flex items-center justify-center h-full text-zinc-500">Loading Markdown...</div>}>
-                      <MarkdownPreview
-                        code={files[activeFile]?.code || ''}
-                        appThemeName={appThemeName}
-                        setAppThemeName={setAppThemeName}
-                      />
-                    </React.Suspense>
-                  </div>
-                ) : (
-                  <iframe
-                    title="ReversX Preview"
-                    srcDoc={combinedHtml}
-                    className="w-full h-full border-none"
-                    sandbox="allow-scripts allow-modals allow-forms allow-popups allow-same-origin"
-                  />
-                )}
+                <VSCodeBrowser
+                  combinedHtml={combinedHtml}
+                  isMarkdownFile={isMarkdownFile}
+                  markdownCode={files[activeFile]?.code || ''}
+                  appThemeName={appThemeName}
+                  onClose={() => { setShowPreview(false); setMobileView('editor'); }}
+                />
               </div>
 
               {previewDevice === 'laptop' && (
