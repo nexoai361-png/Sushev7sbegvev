@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
-import { X, Minus, Plus, CheckCircle2, ChevronDown, ChevronUp } from 'lucide-react';
+import { X, Minus, Plus, CheckCircle2 } from 'lucide-react';
 import { APP_THEMES } from '../App';
-import { ICON_THEMES, Codicon } from '../lib/icons';
+import { ICON_THEMES } from '../lib/icons';
 import { SYNTAX_THEMES } from '../utils/editorUtils';
 import { SHORTCUT_PRESETS } from './MobileKeyboardToolbar';
 
@@ -10,6 +10,8 @@ interface SettingsModalProps {
   onClose: () => void;
   appThemeName: string;
   setAppThemeName: (theme: string) => void;
+  uiStyle: 'default' | 'material';
+  setUiStyle: (style: 'default' | 'material') => void;
   iconThemeName: string;
   setIconThemeName: (theme: string) => void;
   editorFontFamily: string;
@@ -41,6 +43,8 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
   onClose,
   appThemeName,
   setAppThemeName,
+  uiStyle,
+  setUiStyle,
   iconThemeName,
   setIconThemeName,
   editorFontFamily,
@@ -62,342 +66,471 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
   fileIconSize,
   setFileIconSize,
 }) => {
-  const [settingsCategory, setSettingsCategory] = useState<'appearance' | 'editor' | 'application' | 'syntax' | 'shortcuts'>('appearance');
-  const [isFontDropdownOpen, setIsFontDropdownOpen] = useState(false);
+  const [settingsCategory, setSettingsCategory] = useState<'commonly' | 'appearance' | 'editor' | 'syntax' | 'shortcuts' | 'application'>('commonly');
+  const [searchQuery, setSearchQuery] = useState('');
+
+  const commonlyUsedKeys = [
+    'workbench.colorTheme',
+    'editor.fontFamily',
+    'editor.fontSize',
+    'window.uiStyle'
+  ];
+
+  interface SettingItem {
+    id: string;
+    title: string;
+    keyName: string;
+    description: string;
+    category: 'appearance' | 'editor' | 'syntax' | 'shortcuts' | 'application';
+    render: () => React.ReactNode;
+  }
+
+  const allSettings: SettingItem[] = [
+    {
+      id: 'uiStyle',
+      title: 'UI Design Style',
+      keyName: 'window.uiStyle',
+      description: 'Controls the overall UI aesthetics. Default mode keeps the sharp retro ReversX edges, while Material UI provides smoother, rounded surfaces.',
+      category: 'appearance',
+      render: () => (
+        <select
+          value={uiStyle}
+          onChange={(e) => setUiStyle(e.target.value as 'default' | 'material')}
+          className="w-full max-w-md h-7 bg-[#2d2d2d] border border-[#3c3c3c] focus:border-[#007acc] text-[#cccccc] text-[12px] px-2 rounded-[2px] outline-none cursor-pointer hover:bg-[#3c3c3c] transition-all"
+        >
+          <option value="default">Default (ReversX)</option>
+          <option value="material">Material UI</option>
+        </select>
+      )
+    },
+    {
+      id: 'appTheme',
+      title: 'Color Theme',
+      keyName: 'workbench.colorTheme',
+      description: 'Specifies the active color scheme applied across the sidebar, terminals, and workspace background panels.',
+      category: 'appearance',
+      render: () => (
+        <select
+          value={appThemeName}
+          onChange={(e) => setAppThemeName(e.target.value)}
+          className="w-full max-w-md h-7 bg-[#2d2d2d] border border-[#3c3c3c] focus:border-[#007acc] text-[#cccccc] text-[12px] px-2 rounded-[2px] outline-none cursor-pointer hover:bg-[#3c3c3c] transition-all"
+        >
+          {Object.keys(APP_THEMES).map((themeName) => (
+            <option key={themeName} value={themeName}>{themeName}</option>
+          ))}
+        </select>
+      )
+    },
+    {
+      id: 'iconTheme',
+      title: 'File Icon Theme',
+      keyName: 'workbench.iconTheme',
+      description: 'Specifies the layout structure and file-association icons shown in the project Explorer tree.',
+      category: 'appearance',
+      render: () => (
+        <select
+          value={iconThemeName}
+          onChange={(e) => setIconThemeName(e.target.value)}
+          className="w-full max-w-md h-7 bg-[#2d2d2d] border border-[#3c3c3c] focus:border-[#007acc] text-[#cccccc] text-[12px] px-2 rounded-[2px] outline-none cursor-pointer hover:bg-[#3c3c3c] transition-all"
+        >
+          {Object.keys(ICON_THEMES).map((themeName) => (
+            <option key={themeName} value={themeName}>{themeName}</option>
+          ))}
+        </select>
+      )
+    },
+    {
+      id: 'systemFont',
+      title: 'System Font Family',
+      keyName: 'window.systemUiFont',
+      description: 'Sets the font family for application workspace panels, menus, and file systems.',
+      category: 'appearance',
+      render: () => (
+        <select
+          value={appFontName}
+          onChange={(e) => setAppFontName(e.target.value)}
+          className="w-full max-w-md h-7 bg-[#2d2d2d] border border-[#3c3c3c] focus:border-[#007acc] text-[#cccccc] text-[12px] px-2 rounded-[2px] outline-none cursor-pointer hover:bg-[#3c3c3c] transition-all"
+        >
+          {Object.keys(FONT_OPTIONS_MAP).map((fontName) => (
+            <option key={fontName} value={fontName} style={{ fontFamily: FONT_OPTIONS_MAP[fontName] }}>{fontName}</option>
+          ))}
+        </select>
+      )
+    },
+    {
+      id: 'fileIconSize',
+      title: 'File Icon Size',
+      keyName: 'workbench.fileIconSize',
+      description: 'Controls the width and height dimensions of rendered file and folder indicators.',
+      category: 'appearance',
+      render: () => (
+        <div className="flex items-center gap-3 max-w-md">
+          <input 
+            type="range" min="10" max="32" value={fileIconSize} 
+            onChange={(e) => setFileIconSize(parseInt(e.target.value))}
+            className="flex-1 accent-[#007acc] bg-[#2d2d2d] h-1 appearance-none cursor-pointer"
+          />
+          <input
+            type="number" min="10" max="32" value={fileIconSize}
+            onChange={(e) => setFileIconSize(Math.max(10, Math.min(32, parseInt(e.target.value) || 16)))}
+            className="w-14 h-7 bg-[#2d2d2d] border border-[#3c3c3c] focus:border-[#007acc] text-white text-[12px] px-2 text-center rounded-[2px] outline-none"
+          />
+          <span className="text-[11px] text-[#858585]">px</span>
+        </div>
+      )
+    },
+    {
+      id: 'editorFontFamily',
+      title: 'Editor: Font Family',
+      keyName: 'editor.fontFamily',
+      description: 'Controls the typeface used in code editors, log outputs, and shell buffers.',
+      category: 'editor',
+      render: () => (
+        <select
+          value={editorFontFamily}
+          onChange={(e) => setEditorFontFamily(e.target.value)}
+          className="w-full max-w-md h-7 bg-[#2d2d2d] border border-[#3c3c3c] focus:border-[#007acc] text-[#cccccc] text-[12px] px-2 rounded-[2px] outline-none cursor-pointer hover:bg-[#3c3c3c] transition-all"
+        >
+          {[
+            { name: 'VS Code Font', value: 'Consolas, Menlo, Monaco, "Courier New", monospace' },
+            { name: 'Consolas', value: 'Consolas, "Liberation Mono", Courier, monospace' },
+            { name: 'Courier New', value: '"Courier New", Courier, monospace' },
+            { name: 'Cascadia Code', value: '"Cascadia Code", "Segoe UI Mono", monospace' },
+            { name: 'Cascadia Mono', value: '"Cascadia Mono", monospace' },
+            { name: 'JetBrains Mono', value: '"JetBrains Mono", monospace' },
+            { name: 'Fira Code', value: '"Fira Code", monospace' },
+            { name: 'Fira Mono', value: '"Fira Mono", monospace' },
+            { name: 'Source Code Pro', value: '"Source Code Pro", monospace' },
+            { name: 'IBM Plex Mono', value: '"IBM Plex Mono", monospace' },
+            { name: 'Hack', value: 'Hack, monospace' },
+            { name: 'Inconsolata', value: 'Inconsolata, monospace' },
+            { name: 'Ubuntu Mono', value: '"Ubuntu Mono", monospace' },
+            { name: 'Roboto Mono', value: '"Roboto Mono", monospace' },
+            { name: 'SF Mono', value: '"SF Mono", Monaco, "Helvetica Neue", monospace' },
+            { name: 'Menlo', value: 'Menlo, Monaco, monospace' },
+            { name: 'Monaco', value: 'Monaco, "Courier New", monospace' },
+            { name: 'DejaVu Sans Mono', value: '"DejaVu Sans Mono", monospace' },
+            { name: 'Liberation Mono', value: '"Liberation Mono", monospace' },
+            { name: 'Anonymous Pro', value: '"Anonymous Pro", monospace' },
+            { name: 'Dank Mono', value: '"Dank Mono", monospace' },
+            { name: 'Input Mono', value: '"Input Mono", monospace' },
+            { name: 'Input Sans', value: '"Input Sans", sans-serif' },
+            { name: 'Iosevka', value: 'Iosevka, monospace' },
+            { name: 'Victor Mono', value: '"Victor Mono", monospace' },
+            { name: 'Operator Mono', value: '"Operator Mono", monospace' },
+            { name: 'PragmataPro', value: 'PragmataPro, monospace' },
+            { name: 'Cousine', value: 'Cousine, monospace' },
+            { name: 'PT Mono', value: '"PT Mono", monospace' },
+            { name: 'Space Mono', value: '"Space Mono", monospace' },
+            { name: 'Noto Sans Mono', value: '"Noto Sans Mono", monospace' },
+            { name: 'Spline Sans Mono', value: '"Spline Sans Mono", monospace' },
+            { name: 'Commit Mono', value: '"Commit Mono", monospace' },
+            { name: 'Geist Mono', value: '"Geist Mono", monospace' },
+            { name: 'Intel One Mono', value: '"Intel One Mono", monospace' },
+            { name: 'Recursive', value: 'Recursive, monospace' },
+            { name: 'Monoid', value: 'Monoid, monospace' },
+            { name: 'Go Mono', value: '"Go Mono", monospace' },
+            { name: 'Droid Sans Mono', value: '"Droid Sans Mono", monospace' },
+            { name: 'Proggy Clean', value: '"Proggy Clean", monospace' },
+            { name: 'Terminus', value: 'Terminus, monospace' },
+            { name: 'Tiny5', value: '"Tiny5", monospace' },
+            { name: 'Envy Code R', value: '"Envy Code R", monospace' },
+            { name: 'Hasklig', value: 'Hasklig, monospace' },
+            { name: 'Meslo LG', value: '"Meslo LG", monospace' },
+            { name: 'JuliaMono', value: 'JuliaMono, monospace' },
+            { name: 'Maple Mono', value: '"Maple Mono", monospace' },
+            { name: 'Agave', value: 'Agave, monospace' },
+            { name: 'Code New Roman', value: '"Code New Roman", monospace' },
+            { name: 'Overpass Mono', value: '"Overpass Mono", monospace' },
+            { name: 'Red Hat Mono', value: '"Red Hat Mono", monospace' },
+            { name: 'Fragment Mono', value: '"Fragment Mono", monospace' },
+            { name: 'CamingoCode', value: 'CamingoCode, monospace' },
+            { name: 'Sudo', value: 'Sudo, monospace' },
+            { name: 'Berkeley Mono', value: '"Berkeley Mono", monospace' },
+            { name: 'Cartograph CF', value: '"Cartograph CF", monospace' },
+            { name: 'Input Serif Mono', value: '"Input Serif Mono", serif, monospace' },
+            { name: 'Inter', value: '"Inter", sans-serif' }
+          ].map((f) => (
+            <option key={f.name} value={f.value} style={{ fontFamily: f.value }}>{f.name}</option>
+          ))}
+        </select>
+      )
+    },
+    {
+      id: 'editorFontSize',
+      title: 'Editor: Font Size',
+      keyName: 'editor.fontSize',
+      description: 'Controls the font size in pixels for optimal reading comfort.',
+      category: 'editor',
+      render: () => (
+        <div className="flex items-center gap-3 max-w-md">
+          <input 
+            type="range" min="10" max="30" value={editorFontSize} 
+            onChange={(e) => setEditorFontSize(parseInt(e.target.value))}
+            className="flex-1 accent-[#007acc] bg-[#2d2d2d] h-1 appearance-none cursor-pointer"
+          />
+          <input
+            type="number" min="10" max="30" value={editorFontSize}
+            onChange={(e) => setEditorFontSize(Math.max(10, Math.min(30, parseInt(e.target.value) || 14)))}
+            className="w-14 h-7 bg-[#2d2d2d] border border-[#3c3c3c] focus:border-[#007acc] text-white text-[12px] px-2 text-center rounded-[2px] outline-none"
+          />
+          <span className="text-[11px] text-[#858585]">px</span>
+        </div>
+      )
+    },
+    {
+      id: 'editorLineHeight',
+      title: 'Editor: Line Height',
+      keyName: 'editor.lineHeight',
+      description: 'Specifies the multiplier line spacing height of editor code lines.',
+      category: 'editor',
+      render: () => (
+        <div className="flex items-center gap-3 max-w-md">
+          <input 
+            type="range" min="1.0" max="2.2" step="0.1" value={editorLineHeight} 
+            onChange={(e) => setEditorLineHeight(parseFloat(e.target.value))}
+            className="flex-1 accent-[#007acc] bg-[#2d2d2d] h-1 appearance-none cursor-pointer"
+          />
+          <input
+            type="number" min="1.0" max="2.2" step="0.1" value={editorLineHeight}
+            onChange={(e) => setEditorLineHeight(Math.max(1.0, Math.min(2.2, parseFloat(e.target.value) || 1.4)))}
+            className="w-14 h-7 bg-[#2d2d2d] border border-[#3c3c3c] focus:border-[#007acc] text-white text-[12px] px-2 text-center rounded-[2px] outline-none"
+          />
+        </div>
+      )
+    },
+    {
+      id: 'syntaxThemeName',
+      title: 'Syntax Highlight Theme',
+      keyName: 'syntax.theme',
+      description: 'Controls the active coloring palette used by the editor tokenizer to highlight code syntax.',
+      category: 'syntax',
+      render: () => (
+        <select
+          value={syntaxThemeName}
+          onChange={(e) => setSyntaxThemeName(e.target.value)}
+          className="w-full max-w-md h-7 bg-[#2d2d2d] border border-[#3c3c3c] focus:border-[#007acc] text-[#cccccc] text-[12px] px-2 rounded-[2px] outline-none cursor-pointer hover:bg-[#3c3c3c] transition-all"
+        >
+          {Object.keys(SYNTAX_THEMES).map((themeName) => (
+            <option key={themeName} value={themeName}>{themeName}</option>
+          ))}
+        </select>
+      )
+    },
+    {
+      id: 'shortcutPresetName',
+      title: 'Shortcuts Row Preset',
+      keyName: 'shortcuts.preset',
+      description: 'Chooses the helper characters layout row for rapid button insertion in mobile environments.',
+      category: 'shortcuts',
+      render: () => (
+        <select
+          value={shortcutPresetName}
+          onChange={(e) => setShortcutPresetName(e.target.value)}
+          className="w-full max-w-md h-7 bg-[#2d2d2d] border border-[#3c3c3c] focus:border-[#007acc] text-[#cccccc] text-[12px] px-2 rounded-[2px] outline-none cursor-pointer hover:bg-[#3c3c3c] transition-all"
+        >
+          {[
+            ...SHORTCUT_PRESETS,
+            { name: 'Custom Layout', description: 'Create your own layout design below' }
+          ].map((preset) => (
+            <option key={preset.name} value={preset.name}>{preset.name} — {preset.description}</option>
+          ))}
+        </select>
+      )
+    },
+    {
+      id: 'customSymbolsStr',
+      title: 'Custom Helper Symbols',
+      keyName: 'shortcuts.customSymbols',
+      description: 'Enter your custom symbols (separated by spaces or commas) for the mobile helper toolbar.',
+      category: 'shortcuts',
+      render: () => (
+        <input
+          type="text"
+          value={customSymbolsStr}
+          onChange={(e) => setCustomSymbolsStr(e.target.value)}
+          className="w-full max-w-md h-7 px-2.5 bg-[#2d2d2d] border border-[#3c3c3c] text-white text-[12px] hover:bg-[#3c3c3c] transition-all focus:outline-none focus:border-[#007acc] font-mono rounded-[2px]"
+          placeholder="e.g. <, >, /, {, }, ;, (, )"
+          disabled={shortcutPresetName !== 'Custom Layout'}
+        />
+      )
+    },
+    {
+      id: 'application',
+      title: 'Application installation',
+      keyName: 'application.install',
+      description: 'Allows installing ReversX onto your local home screen or desktop to work offline.',
+      category: 'application',
+      render: () => isInstallable ? (
+        <button
+          onClick={handleInstallClick}
+          className="px-4 py-1.5 bg-[#007acc] hover:bg-[#0062a3] active:bg-[#004e82] text-white text-[11px] rounded-[2px] transition-all font-medium cursor-pointer"
+        >
+          Install PWA
+        </button>
+      ) : (
+        <div className="text-[11px] text-[#858585] space-y-1 bg-[#1e1e1e] p-2.5 rounded-[2px] border border-[#333333] max-w-md">
+          <p>✓ Running in browser Sandbox</p>
+          <p>✓ Offline support available via service worker</p>
+        </div>
+      )
+    }
+  ];
+
+  const filteredSettings = allSettings.filter(item => {
+    if (searchQuery) {
+      const q = searchQuery.toLowerCase();
+      return (
+        item.title.toLowerCase().includes(q) ||
+        item.keyName.toLowerCase().includes(q) ||
+        item.description.toLowerCase().includes(q) ||
+        item.category.toLowerCase().includes(q)
+      );
+    }
+    
+    if (settingsCategory === 'commonly') {
+      return commonlyUsedKeys.includes(item.keyName);
+    }
+    
+    return item.category === settingsCategory;
+  });
 
   return (
     <React.Fragment>
       {isOpen && (
         <>
-          <div 
-            
-            
-            
-            onClick={onClose}
-            className="fixed inset-0 z-[80] bg-black/40 backdrop-blur-[2px]"
-          />
+          {/* VS Code Settings Panel - Full Screen */}
           <div
-            
-            
-            
-            className="fixed left-4 md:left-14 bottom-14 md:bottom-4 z-[90] w-[calc(100%-32px)] md:w-[600px] h-[450px] bg-sidebar border border-border shadow-2xl rounded-none flex flex-col overflow-hidden font-sans"
+            className="fixed inset-0 z-[150] bg-[#1e1e1e] flex flex-col overflow-hidden font-sans text-[#cccccc]"
           >
-            <button 
-              onClick={onClose}
-              className="absolute top-2 right-2 p-1.5 text-[#858585] hover:text-white hover:bg-white/10 rounded-none transition-colors z-[100]"
-            >
-              <X size={14} />
-            </button>
-            <div className="flex-1 flex overflow-hidden">
-              {/* Menu Sidebar */}
-              <div className="w-40 border-r border-white/[0.05] py-2 flex-shrink-0 bg-background relative">
-                <div className="px-4 py-2 mb-2 flex items-center justify-between">
-                  <span className="text-[10px] font-bold text-[#858585] tracking-wider">Settings</span>
-                </div>
-                <div className="space-y-0.5">
-                  {[
-                    { id: 'appearance', label: 'Appearance' },
-                    { id: 'editor', label: 'Text Editor' },
-                    { id: 'syntax', label: 'Syntax' },
-                    { id: 'shortcuts', label: 'Shortcuts Row' },
-                    { id: 'application', label: 'Application' }
-                  ].map(cat => (
+            {/* Preferences Title Bar */}
+            <div className="h-9 bg-[#2d2d2d] border-b border-[#252526] px-3.5 flex items-center justify-between select-none shrink-0">
+              <div className="flex items-center gap-1.5">
+                <span className="text-[11px] text-[#858585] font-semibold">Preferences</span>
+                <span className="text-[10px] text-[#858585]">•</span>
+                <span className="text-[11px] text-[#e1e1e1]">Settings</span>
+              </div>
+              <button 
+                onClick={onClose}
+                className="p-1 text-[#858585] hover:text-white hover:bg-white/10 rounded-[2px] transition-all"
+              >
+                <X size={14} />
+              </button>
+            </div>
+
+            {/* Search Header */}
+            <div className="bg-[#1e1e1e] border-b border-[#252526] shrink-0">
+              <div className="p-4 pb-0">
+                <div className="relative w-full max-w-2xl mb-3.5">
+                  <input
+                    type="text"
+                    placeholder="Search settings"
+                    value={searchQuery}
+                    onChange={(e) => setSearchQuery(e.target.value)}
+                    className="w-full h-7 bg-[#2d2d2d] border border-[#3c3c3c] focus:border-[#007acc] text-white text-[12px] pl-8 pr-8 rounded-[2px] outline-none transition-all placeholder-[#858585]"
+                  />
+                  <div className="absolute left-2.5 top-1/2 -translate-y-1/2 text-[#858585]">
+                    <svg width="12" height="12" viewBox="0 0 16 16" fill="currentColor">
+                      <path d="M15.7 14.3l-4.2-4.2c.8-1 1.3-2.2 1.3-3.6 0-3.1-2.5-5.6-5.6-5.6S1.6 3.4 1.6 6.5s2.5 5.6 5.6 5.6c1.4 0 2.6-.5 3.6-1.3l4.2 4.2c.2.2.5.3.7.3s.5-.1.7-.3c.4-.4.4-1 0-1.3zM7.2 10.6c-2.3 0-4.1-1.8-4.1-4.1S4.9 2.4 7.2 2.4s4.1 1.8 4.1 4.1-1.8 4.1-4.1 4.1z"/>
+                    </svg>
+                  </div>
+                  {searchQuery && (
                     <button 
-                      key={cat.id}
-                      onClick={() => setSettingsCategory(cat.id as any)}
-                      className={`w-full text-left px-4 py-1.5 text-[12px] transition-colors ${settingsCategory === cat.id ? 'bg-[#37373d] text-white border-l-2 border-[#007acc]' : 'text-[#cccccc] hover:bg-[#2a2d2e] hover:text-white border-l-2 border-transparent'}`}
+                      onClick={() => setSearchQuery('')}
+                      className="absolute right-2 top-1/2 -translate-y-1/2 text-[#858585] hover:text-white"
                     >
-                      {cat.label}
+                      <X size={12} />
                     </button>
-                  ))}
+                  )}
+                </div>
+
+                {/* User vs Workspace Subtabs */}
+                <div className="flex gap-4 text-[12px] select-none mb-2">
+                  <button className="pb-1.5 border-b-2 border-[#007acc] text-[#e1e1e1] font-medium">User</button>
+                  <button className="pb-1.5 border-b-2 border-transparent text-[#858585] hover:text-[#cccccc] cursor-not-allowed" title="Workspace settings not available in single-user mode">Workspace</button>
                 </div>
               </div>
 
-              {/* Content Area */}
-              <div className="flex-1 overflow-y-auto custom-scrollbar bg-sidebar p-6">
-                {settingsCategory === 'appearance' && (
-                  <div className="space-y-6 animate-in fade-in slide-in-from-right-1 duration-200">
-                    <h3 className="text-xs font-semibold text-[#007acc] tracking-wider mb-4 border-b border-white/10 pb-1">Appearance</h3>
-                    
-                    <div>
-                      <label className="block text-[12px] text-[#cccccc] mb-1.5 font-medium">App Theme</label>
-                      <div className="grid grid-cols-1 gap-1.5">
-                        {Object.keys(APP_THEMES).map((themeName) => (
-                          <button
-                            key={themeName}
-                            onClick={() => setAppThemeName(themeName)}
-                            className={`px-3 py-1.5 text-[12px] text-left transition-all ${
-                              appThemeName === themeName 
-                                ? 'bg-[#37373d] text-white' 
-                                : 'text-[#cccccc] hover:bg-[#2a2d2e]'
-                            }`}
-                          >
-                            {themeName}
-                          </button>
-                        ))}
-                      </div>
-                    </div>
-
-                    <div>
-                      <label className="block text-[12px] text-[#cccccc] mb-1.5 font-medium">Icon Theme</label>
-                      <div className="grid grid-cols-1 gap-1.5">
-                        {Object.keys(ICON_THEMES).map((themeName) => (
-                          <button
-                            key={themeName}
-                            onClick={() => setIconThemeName(themeName)}
-                            className={`px-3 py-1.5 text-[12px] text-left transition-all ${
-                              iconThemeName === themeName 
-                                ? 'bg-[#37373d] text-white' 
-                                : 'text-[#cccccc] hover:bg-[#2a2d2e]'
-                            }`}
-                          >
-                            {themeName}
-                          </button>
-                        ))}
-                      </div>
-                    </div>
-
-                    <div>
-                      <label className="block text-[12px] text-[#cccccc] mb-1.5 font-medium">System UI Fonts</label>
-                      <div className="relative">
-                        <button
-                          onClick={() => setIsFontDropdownOpen(!isFontDropdownOpen)}
-                          className="w-full h-8 px-3 bg-[#3c3c3c] border border-white/10 text-white text-[12px] text-left flex items-center justify-between hover:bg-[#4a4a4a] transition-all focus:outline-none"
-                        >
-                          <span style={{ fontFamily: FONT_OPTIONS_MAP[appFontName] }}>{appFontName}</span>
-                          {isFontDropdownOpen ? <ChevronUp size={14} className="text-[#858585]" /> : <ChevronDown size={14} className="text-[#858585]" />}
-                        </button>
-                        {isFontDropdownOpen && (
-                          <div className="absolute left-0 right-0 mt-1 max-h-48 overflow-y-auto bg-[#252526] border border-[#454545] shadow-[0_4px_12px_rgba(0,0,0,0.6)] z-[100] py-1 custom-scrollbar">
-                            {Object.keys(FONT_OPTIONS_MAP).map((fontName) => (
-                              <button
-                                key={fontName}
-                                onClick={() => {
-                                  setAppFontName(fontName);
-                                  setIsFontDropdownOpen(false);
-                                }}
-                                className={`w-full px-3 py-2 text-left text-[11px] transition-colors hover:bg-[#007acc] hover:text-white flex items-center justify-between ${
-                                  appFontName === fontName ? 'bg-[#37373d] text-white font-medium border-l-2 border-[#007acc]' : 'text-[#cccccc]'
-                                }`}
-                                style={{ fontFamily: FONT_OPTIONS_MAP[fontName] }}
-                              >
-                                <span>{fontName}</span>
-                                {appFontName === fontName && <CheckCircle2 size={11} className="text-[#007acc]" />}
-                              </button>
-                            ))}
-                          </div>
-                        )}
-                      </div>
-                    </div>
-
-                    <div>
-                      <div className="flex items-center justify-between mb-1.5">
-                        <label className="text-[12px] text-[#cccccc] font-medium">File Icon Size</label>
-                        <div className="flex items-center gap-2">
-                          <button 
-                            onClick={() => setFileIconSize(Math.max(10, fileIconSize - 1))}
-                            className="p-1 hover:bg-white/10 rounded-none transition-colors text-[#858585] hover:text-white"
-                            title="Decrease icon size"
-                          >
-                            <Minus size={12} />
-                          </button>
-                          <span className="text-[10px] text-[#858585] min-w-[24px] text-center">{fileIconSize}px</span>
-                          <button 
-                            onClick={() => setFileIconSize(Math.min(32, fileIconSize + 1))}
-                            className="p-1 hover:bg-white/10 rounded-none transition-colors text-[#858585] hover:text-white"
-                            title="Increase icon size"
-                          >
-                            <Plus size={12} />
-                          </button>
-                        </div>
-                      </div>
-                    </div>
-                  </div>
-                )}
-
-                {settingsCategory === 'editor' && (
-                  <div className="space-y-6 animate-in fade-in slide-in-from-right-1 duration-200">
-                    <h3 className="text-xs font-semibold text-[#007acc] tracking-wider mb-4 border-b border-white/10 pb-1">Text Editor</h3>
-                    
-                    <div>
-                      <label className="block text-[12px] text-[#cccccc] mb-1.5 font-medium">Font Family</label>
-                      <div className="grid grid-cols-1 gap-1.5">
-                        {[
-                          { name: 'VS Code Font', value: 'Consolas, Menlo, Monaco, "Courier New", monospace' },
-                          { name: 'JetBrains Mono', value: '"JetBrains Mono", monospace' },
-                          { name: 'Fira Code', value: '"Fira Code", monospace' },
-                          { name: 'Inter', value: '"Inter", sans-serif' }
-                        ].map((f) => (
-                          <button
-                            key={f.name}
-                            onClick={() => setEditorFontFamily(f.value)}
-                            className={`px-3 py-1.5 text-[12px] text-left transition-all ${
-                              editorFontFamily === f.value 
-                                ? 'bg-[#37373d] text-white' 
-                                : 'text-[#cccccc] hover:bg-[#2a2d2e]'
-                            }`}
-                            style={{ fontFamily: f.value }}
-                          >
-                            {f.name}
-                          </button>
-                        ))}
-                      </div>
-                    </div>
-
-                    <div>
-                      <div className="flex items-center justify-between mb-1.5">
-                        <label className="text-[12px] text-[#cccccc] font-medium">Font Size</label>
-                        <div className="flex items-center gap-2">
-                          <button 
-                            onClick={() => setEditorFontSize(Math.max(10, editorFontSize - 1))}
-                            className="p-0.5 hover:bg-white/10 rounded-none transition-colors text-[#858585] hover:text-white"
-                            title="Decrease font size"
-                          >
-                            <Minus size={12} />
-                          </button>
-                          <span className="text-[10px] text-[#858585] min-w-[24px] text-center">{editorFontSize}px</span>
-                          <button 
-                            onClick={() => setEditorFontSize(Math.min(30, editorFontSize + 1))}
-                            className="p-0.5 hover:bg-white/10 rounded-none transition-colors text-[#858585] hover:text-white"
-                            title="Increase font size"
-                          >
-                            <Plus size={12} />
-                          </button>
-                        </div>
-                      </div>
-                      <input 
-                        type="range" min="10" max="30" value={editorFontSize} 
-                        onChange={(e) => setEditorFontSize(parseInt(e.target.value))}
-                        className="w-full accent-[#007acc] bg-[#3c3c3c] h-1 rounded-lg appearance-none cursor-pointer"
-                      />
-                    </div>
-
-                    <div>
-                      <div className="flex items-center justify-between mb-1.5">
-                        <label className="text-[12px] text-[#cccccc] font-medium">Line Height</label>
-                        <div className="flex items-center gap-2">
-                          <button 
-                            onClick={() => setEditorLineHeight(Math.max(1.0, Math.round((editorLineHeight - 0.1) * 10) / 10))}
-                            className="p-0.5 hover:bg-white/10 rounded-none transition-colors text-[#858585] hover:text-white"
-                            title="Decrease line height"
-                          >
-                            <Minus size={12} />
-                          </button>
-                          <span className="text-[10px] text-[#858585] min-w-[24px] text-center">{editorLineHeight.toFixed(1)}</span>
-                          <button 
-                            onClick={() => setEditorLineHeight(Math.min(2.2, Math.round((editorLineHeight + 0.1) * 10) / 10))}
-                            className="p-0.5 hover:bg-white/10 rounded-none transition-colors text-[#858585] hover:text-white"
-                            title="Increase line height"
-                          >
-                            <Plus size={12} />
-                          </button>
-                        </div>
-                      </div>
-                      <input 
-                        type="range" min="1.0" max="2.2" step="0.1" value={editorLineHeight} 
-                        onChange={(e) => setEditorLineHeight(parseFloat(e.target.value))}
-                        className="w-full accent-[#007acc] bg-[#3c3c3c] h-1 rounded-lg appearance-none cursor-pointer"
-                      />
-                    </div>
-                  </div>
-                )}
-
-                {settingsCategory === 'syntax' && (
-                  <div className="space-y-6 animate-in fade-in slide-in-from-right-1 duration-200">
-                    <h3 className="text-xs font-semibold text-[#007acc] tracking-wider mb-4 border-b border-white/10 pb-1">Syntax Highlighter</h3>
-                    
-                    <div className="grid grid-cols-2 gap-2">
-                      {Object.keys(SYNTAX_THEMES).map((themeName) => (
-                        <button
-                          key={themeName}
-                          onClick={() => setSyntaxThemeName(themeName)}
-                          className={`px-3 py-2 text-[11px] text-left transition-all rounded-[2px] border ${
-                            syntaxThemeName === themeName 
-                              ? 'bg-[#37373d] text-white border-[#007acc]' 
-                              : 'text-[#cccccc] hover:bg-[#2a2d2e] border-transparent'
-                          }`}
-                        >
-                          <div className="flex items-center justify-between">
-                            <span>{themeName}</span>
-                            {syntaxThemeName === themeName && <CheckCircle2 size={12} className="text-[#007acc]" />}
-                          </div>
-                        </button>
-                      ))}
-                    </div>
-                  </div>
-                )}
-
-                 {settingsCategory === 'shortcuts' && (
-                  <div className="space-y-6 animate-in fade-in slide-in-from-right-1 duration-200">
-                    <h3 className="text-xs font-semibold text-[#007acc] tracking-wider mb-4 border-b border-white/10 pb-1">Shortcuts Row Layout</h3>
-                    
-                    <div>
-                      <label className="block text-[12px] text-[#cccccc] mb-1.5 font-medium">Layout Design</label>
-                      <div className="grid grid-cols-1 gap-1.5 max-h-56 overflow-y-auto pr-1">
-                        {[
-                          ...SHORTCUT_PRESETS,
-                          { name: 'Custom Layout', description: 'Create your own layout design below' }
-                        ].map((preset) => (
-                          <button
-                            key={preset.name}
-                            onClick={() => setShortcutPresetName(preset.name)}
-                            className={`px-3 py-2 text-[11px] text-left transition-all border rounded-[2px] flex flex-col gap-0.5 ${
-                              shortcutPresetName === preset.name 
-                                ? 'bg-[#37373d] text-white border-[#007acc]' 
-                                : 'text-[#cccccc] hover:bg-[#2a2d2e] border-transparent'
-                            }`}
-                          >
-                            <span className="font-semibold">{preset.name}</span>
-                            <span className="text-[10px] text-[#858585]">{preset.description}</span>
-                          </button>
-                        ))}
-                      </div>
-                    </div>
-
-                    {shortcutPresetName === 'Custom Layout' && (
-                      <div className="space-y-2 animate-in fade-in duration-200">
-                        <label className="block text-[12px] text-[#cccccc] font-medium">Custom Symbols</label>
-                        <p className="text-[10px] text-[#858585]">Enter your favorite symbols separated by spaces or commas.</p>
-                        <input
-                          type="text"
-                          value={customSymbolsStr}
-                          onChange={(e) => setCustomSymbolsStr(e.target.value)}
-                          className="w-full h-8 px-3 bg-[#3c3c3c] border border-white/10 text-white text-[11px] hover:bg-[#4a4a4a] transition-all focus:outline-none focus:border-[#007acc] font-mono"
-                          placeholder="e.g. <, >, /, {, }, ;, (, )"
-                        />
-                      </div>
+              {/* Settings Category Tabs (Horizontal) */}
+              <div className="flex bg-[#252526] overflow-x-auto no-scrollbar">
+                {[
+                  { id: 'commonly', label: 'Commonly Used' },
+                  { id: 'editor', label: 'Text Editor' },
+                  { id: 'appearance', label: 'Appearance' },
+                  { id: 'syntax', label: 'Syntax Theme' },
+                  { id: 'shortcuts', label: 'Shortcuts Row' },
+                  { id: 'application', label: 'Application' }
+                ].map(cat => (
+                  <button 
+                    key={cat.id}
+                    onClick={() => {
+                      setSettingsCategory(cat.id as any);
+                      setSearchQuery('');
+                    }}
+                    className={`flex-shrink-0 px-4 h-9 flex items-center gap-2 text-[12px] border-r border-[#1e1e1e] transition-all relative ${
+                      (settingsCategory === cat.id && !searchQuery)
+                        ? 'bg-[#2d2d2d] text-white' 
+                        : 'bg-[#252526] text-[#858585] hover:bg-[#2d2d2d] hover:text-[#cccccc]'
+                    }`}
+                  >
+                    {settingsCategory === cat.id && !searchQuery && (
+                      <div className="absolute bottom-0 left-2 right-2 h-[2px] bg-[#007acc] rounded-t-full shadow-[0_-2px_8px_rgba(0,122,204,0.4)]" />
                     )}
-                  </div>
-                )}
-
-                {settingsCategory === 'application' && (
-                  <div className="space-y-6 animate-in fade-in slide-in-from-right-1 duration-200">
-                    <h3 className="text-xs font-semibold text-[#007acc] tracking-wider mb-4 border-b border-white/10 pb-1">Application</h3>
-                    
-                    {isInstallable && (
-                      <div className="bg-background p-4 rounded-[2px] border border-white/5">
-                        <h4 className="text-[12px] font-medium text-white mb-1">Install App</h4>
-                        <p className="text-[11px] text-[#858585] mb-3">Install on your device for offline access.</p>
-                        <button
-                          onClick={handleInstallClick}
-                          className="w-full py-1.5 bg-[#007acc] hover:bg-[#0062a3] active:bg-[#005a9e] text-white text-[11px] rounded-[2px] transition-colors"
-                        >
-                          Install Now
-                        </button>
-                      </div>
-                    )}
-
-                    <div className="text-[11px] text-[#858585] space-y-1">
-                      <p>Version: 1.0.0 (Preview)</p>
-                      <p>Status: Production Ready</p>
-                    </div>
-                  </div>
-                )}
+                    <span className={settingsCategory === cat.id && !searchQuery ? 'font-medium' : ''}>{cat.label}</span>
+                  </button>
+                ))}
               </div>
             </div>
-            
-            <div className="h-8 border-t border-white/[0.05] bg-[#007acc] flex items-center px-4 shrink-0">
-              <span className="text-[10px] text-white font-medium">ReversX Settings Preview</span>
+
+            {/* Split Panel Area */}
+            <div className="flex-1 flex overflow-hidden">
+              {/* Settings Scrollable Content Panel */}
+              <div className="flex-1 overflow-y-auto custom-scrollbar bg-[#1e1e1e] p-5">
+                <div className="mb-4">
+                  <h3 className="text-[14px] font-normal text-[#e1e1e1] capitalize">
+                    {searchQuery ? `Search Results for "${searchQuery}"` : settingsCategory.replace('commonly', 'Commonly Used').replace('editor', 'Text Editor').replace('syntax', 'Syntax Theme').replace('shortcuts', 'Shortcuts Row')}
+                  </h3>
+                </div>
+
+                <div className="space-y-5 divide-y divide-[#252526]">
+                  {filteredSettings.length > 0 ? (
+                    filteredSettings.map((setting) => (
+                      <div 
+                        key={setting.id} 
+                        className="group relative pl-4.5 py-4 border-l-2 border-transparent hover:border-[#3c3c3c] transition-colors first:pt-1"
+                      >
+                        {/* VS Code Focus active left marker bar */}
+                        <div className="absolute left-0 top-0 bottom-0 w-[2px] bg-[#007acc] opacity-0 group-hover:opacity-40" />
+
+                        <div className="flex items-start justify-between mb-2">
+                          <div className="flex flex-col">
+                            <div className="flex items-center gap-2 flex-wrap">
+                              <span className="text-[12.5px] font-medium text-[#e1e1e1]">{setting.title}</span>
+                              <span className="text-[10px] font-mono text-[#007acc]">{setting.keyName}</span>
+                            </div>
+                            <span className="text-[11px] text-[#858585] mt-1 max-w-[520px] leading-relaxed">
+                              {setting.description}
+                            </span>
+                          </div>
+                        </div>
+
+                        <div className="mt-2 text-[12px]">
+                          {setting.render()}
+                        </div>
+                      </div>
+                    ))
+                  ) : (
+                    <div className="py-8 text-center text-[12px] text-[#858585]">
+                      No settings found matching your query.
+                    </div>
+                  )}
+                </div>
+              </div>
+            </div>
+
+            {/* Footer Status Bar */}
+            <div className="h-6.5 border-t border-[#252526] bg-[#007acc] flex items-center px-4 shrink-0 select-none">
+              <span className="text-[10px] text-white font-medium">ReversX System Preferences</span>
             </div>
           </div>
         </>

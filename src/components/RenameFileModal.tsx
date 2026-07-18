@@ -46,7 +46,7 @@ export const RenameFileModal: React.FC<RenameFileModalProps> = ({
               </button>
               <button 
                 onClick={confirmRenameFile}
-                className="px-6 py-2 bg-[#007ACC] hover:bg-[#006BB3] active:bg-[#005a9e] text-white text-sm font-medium rounded-[2px] transition-colors"
+                className="px-6 py-2 bg-[#007acc] hover:bg-[#0062a3] active:bg-[#004e82] text-white text-sm font-medium rounded-[2px] transition-colors"
               >
                 Rename
               </button>

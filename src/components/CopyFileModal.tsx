@@ -133,7 +133,7 @@ export const CopyFileModal: React.FC<CopyFileModalProps> = ({
                 if (e.key === 'Enter') confirmCopyFile();
                 if (e.key === 'Escape') onClose();
               }}
-              className="w-full bg-[#3c3c3c]/30 border border-[#3c3c3c] focus:border-[#007acc] focus:ring-1 focus:ring-[#007acc] rounded-[2px] px-2.5 py-2 text-xs text-white font-mono focus:outline-none"
+              className="w-full bg-[#3c3c3c]/30 border border-[#3c3c3c] focus:border-[#007acc] focus:ring-1 focus:ring-[#007acc]/30 rounded-[2px] px-2.5 py-2 text-xs text-white font-mono focus:outline-none"
               placeholder="Enter destination path..."
             />
           </div>
@@ -142,7 +142,7 @@ export const CopyFileModal: React.FC<CopyFileModalProps> = ({
           {directories.length > 0 && (
             <div className="flex flex-col gap-1.5">
               <div className="text-[11px] text-zinc-400 uppercase tracking-wider flex items-center gap-1">
-                <Folder size={11} className="text-amber-500" />
+                <Folder size={11} className="text-[#007acc]" />
                 <span>Quick Destination Folder</span>
               </div>
               <div className="flex flex-wrap gap-1 max-h-[100px] overflow-y-auto bg-[#1a1a1a] border border-[#2d2d2d] p-1.5 rounded-[2px] custom-scrollbar">
@@ -179,7 +179,7 @@ export const CopyFileModal: React.FC<CopyFileModalProps> = ({
           </button>
           <button 
             onClick={confirmCopyFile}
-            className="px-5 py-1.5 bg-[#007acc] hover:bg-[#0062a3] active:bg-[#005a9e] text-white text-xs font-semibold rounded-[2px] transition-colors"
+            className="px-5 py-1.5 bg-[#007acc] hover:bg-[#0062a3] active:bg-[#004e82] text-white text-xs font-semibold rounded-[2px] transition-colors"
           >
             Copy File
           </button>

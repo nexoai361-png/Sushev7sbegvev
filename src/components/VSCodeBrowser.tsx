@@ -668,7 +668,7 @@ export function VSCodeBrowser({
         <div className="w-full h-[2px] bg-transparent shrink-0 relative overflow-hidden">
           <div 
             className="h-full bg-accent transition-all duration-150 shadow-[0_0_8px_var(--accent-color)]"
-            style={{ width: `${loadingProgress}%`, '--accent-color': '#007acc' } as React.CSSProperties}
+            style={{ width: `${loadingProgress}%`, '--accent-color': '#d97706' } as React.CSSProperties}
           />
         </div>
       )}
@@ -789,14 +789,14 @@ export function VSCodeBrowser({
           <div className="w-full h-full relative bg-white flex flex-col">
             
             {/* Friendly frame overlay helper informing about potential iframe blockages */}
-            <div className="bg-amber-500/10 border-b border-amber-500/20 px-3 py-1 flex items-center justify-between text-amber-500 text-[10px] shrink-0">
+            <div className="bg-[#007acc]/10 border-b border-[#007acc]/20 px-3 py-1 flex items-center justify-between text-[#007acc] text-[10px] shrink-0">
               <div className="flex items-center gap-1.5">
                 <Info size={11} className="shrink-0" />
                 <span>Websites restricting iframe embedding may load blank. Click external icon to open directly.</span>
               </div>
               <button
                 onClick={openInNewExternalWindow}
-                className="flex items-center gap-1 hover:underline font-semibold bg-amber-500/10 px-1.5 py-0.5 rounded"
+                className="flex items-center gap-1 hover:underline font-semibold bg-[#007acc]/10 px-1.5 py-0.5 rounded"
               >
                 Open External <ExternalLink size={8} />
               </button>

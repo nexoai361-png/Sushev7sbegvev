@@ -86,7 +86,7 @@ export const GithubImportModal: React.FC<GithubImportModalProps> = ({
             <button 
               disabled={isGitHubImporting || !githubRepoUrl}
               onClick={confirmGithubImport}
-              className={`px-4 py-1 bg-[#007acc] hover:bg-[#006bb3] text-white text-[12px] rounded-none transition-colors flex items-center gap-2 min-w-[80px] justify-center ${isGitHubImporting || !githubRepoUrl ? 'opacity-50 cursor-not-allowed' : ''}`}
+              className={`px-4 py-1 bg-[#007acc] hover:bg-[#0062a3] text-white text-[12px] rounded-none transition-colors flex items-center gap-2 min-w-[80px] justify-center ${isGitHubImporting || !githubRepoUrl ? 'opacity-50 cursor-not-allowed' : ''}`}
             >
               {isGitHubImporting ? (
                 <>

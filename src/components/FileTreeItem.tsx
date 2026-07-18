@@ -351,7 +351,7 @@ export const FileTreeItem = React.memo(({
             e.stopPropagation(); 
             handleCopyFile(name); 
           }}
-          className="p-0.5 hover:bg-[var(--sidebar-subtle)]/80 active:bg-[var(--sidebar-subtle)] rounded-sm text-[var(--sidebar-fg)]/65 hover:text-sky-400 transition-all duration-100 opacity-0 group-hover:opacity-100 mr-1"
+          className="p-0.5 hover:bg-[var(--sidebar-subtle)]/80 active:bg-[var(--sidebar-subtle)] rounded-sm text-[var(--sidebar-fg)]/65 hover:text-[#007acc] transition-all duration-100 opacity-0 group-hover:opacity-100 mr-1"
           title="Copy file"
         >
           <Copy size={11} />
@@ -362,7 +362,7 @@ export const FileTreeItem = React.memo(({
             e.stopPropagation(); 
             handleMoveFile(name); 
           }}
-          className="p-0.5 hover:bg-[var(--sidebar-subtle)]/80 active:bg-[var(--sidebar-subtle)] rounded-sm text-[var(--sidebar-fg)]/65 hover:text-amber-400 transition-all duration-100 opacity-0 group-hover:opacity-100 mr-1"
+          className="p-0.5 hover:bg-[var(--sidebar-subtle)]/80 active:bg-[var(--sidebar-subtle)] rounded-sm text-[var(--sidebar-fg)]/65 hover:text-[#007acc] transition-all duration-100 opacity-0 group-hover:opacity-100 mr-1"
           title="Move file"
         >
           <Move size={11} />

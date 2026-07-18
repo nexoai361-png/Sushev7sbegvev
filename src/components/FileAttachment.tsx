@@ -17,7 +17,7 @@ export const FileAttachment = ({ attachment, isUser, onEdit }: FileAttachmentPro
     <div className={`mt-2 flex flex-col ${isUser ? 'items-end' : 'items-start'} w-full`}>
       <div 
         onClick={() => onEdit ? onEdit() : setShow(!show)}
-        className="flex items-center gap-2 text-[11px] text-blue-400 hover:text-blue-300 transition-colors bg-white/5 px-3 py-2 rounded-none border border-white/10 cursor-pointer select-none group"
+        className="flex items-center gap-2 text-[11px] text-accent hover:text-accent/80 transition-colors bg-white/5 px-3 py-2 rounded-none border border-white/10 cursor-pointer select-none group"
       >
         <Files size={14} />
         <span className="truncate max-w-[200px] font-medium">{attachment.name}</span>

@@ -294,7 +294,7 @@ export const APP_THEMES: Record<string, any> = {
     foreground: '#d4d4d4',
     muted: '#858585',
     subtle: '#454545',
-    accent: '#007acc',
+    accent: '#d97706',
     accentForeground: '#ffffff',
     sidebar: '#252526',
     border: '#333333'
@@ -806,7 +806,7 @@ export default function App() {
   }, [geminiApiKey, geminiModel]);
 
   const [mainView, setMainView] = useState<'editor' | 'preview' | 'projects' | 'settings'>('editor');
-  const [mobileView, setMobileView] = useState<'editor' | 'chat' | 'preview' | 'tab'>('editor');
+  const [mobileView, setMobileView] = useState<'editor' | 'chat' | 'preview' | 'tab' | 'terminal'>('editor');
   const [showSnippetEditor, setShowSnippetEditor] = useState<Snippet | null>(null);
   const [showSnippetsModal, setShowSnippetsModal] = useState(false);
   const [showProjectNaming, setShowProjectNaming] = useState(false);
@@ -836,6 +836,7 @@ export default function App() {
   const [isSplitScreen, setIsSplitScreen] = useState(false);
   const [openFiles, setOpenFiles] = useState<string[]>([]);
   const [appThemeName, setAppThemeName] = useState('VS Code Dark');
+  const [uiStyle, setUiStyle] = useState<'default' | 'material'>('default');
   const [iconThemeName, setIconThemeName] = useState('VS code');
   const [fileIconSize, setFileIconSize] = useState(16);
   const [appFontName, setAppFontName] = useState('System Font');
@@ -948,7 +949,7 @@ export default function App() {
   const [isBookmarksCollapsed, setIsBookmarksCollapsed] = useState(false);
   const [isLandscape, setIsLandscape] = useState(window.innerWidth > window.innerHeight);
   const [bookmarkSearchTerm, setBookmarkSearchTerm] = useState('');
-  const enabledMobileTabs = ['editor', 'preview', 'settings'];
+  const enabledMobileTabs = ['editor', 'preview', 'terminal', 'settings'];
   const [activeTooltip, setActiveTooltip] = useState<{ text: string, x: number, y: number } | null>(null);
   const tooltipTimerRef = useRef<NodeJS.Timeout | null>(null);
 
@@ -1109,6 +1110,10 @@ export default function App() {
   }, [appThemeName, isDbLoaded]);
 
   useEffect(() => {
+    if (isDbLoaded) idbSet('reversx_ui_style', uiStyle);
+  }, [uiStyle, isDbLoaded]);
+
+  useEffect(() => {
     if (isDbLoaded) idbSet('reversx_icon_theme', iconThemeName);
   }, [iconThemeName, isDbLoaded]);
 
@@ -1210,6 +1215,7 @@ export default function App() {
         setActiveFile(await checkAndMigrate('reversx_active_file', false, ''));
         setOpenFiles(await checkAndMigrate('reversx_open_files', true, []));
         setAppThemeName(await checkAndMigrate('reversx_app_theme', false, 'VS Code Dark'));
+        setUiStyle(await checkAndMigrate('reversx_ui_style', false, 'default'));
         setIconThemeName(await checkAndMigrate('reversx_icon_theme', false, 'VS code'));
         setFileIconSize(await checkAndMigrate('reversx_file_icon_size', false, 16));
         setAppFontName(await checkAndMigrate('reversx_app_font', false, 'System Font'));
@@ -1262,6 +1268,35 @@ export default function App() {
   }, [isDbLoaded]);
 
   const activeEditorRef = useRef<any>(null);
+  const terminalBottomRef = useRef<HTMLDivElement>(null);
+  const tabContainerRef = useRef<HTMLDivElement>(null);
+  const touchStartX = useRef<number | null>(null);
+  const touchScrollLeft = useRef<number>(0);
+
+  const handleTouchStart = (e: React.TouchEvent) => {
+    if (tabContainerRef.current) {
+      touchStartX.current = e.touches[0].clientX;
+      touchScrollLeft.current = tabContainerRef.current.scrollLeft;
+    }
+  };
+
+  const handleTouchMove = (e: React.TouchEvent) => {
+    if (touchStartX.current !== null && tabContainerRef.current) {
+      const touchCurrentX = e.touches[0].clientX;
+      const diffX = touchStartX.current - touchCurrentX;
+      tabContainerRef.current.scrollLeft = touchScrollLeft.current + diffX;
+    }
+  };
+
+  const handleTouchEnd = () => {
+    touchStartX.current = null;
+  };
+
+  useEffect(() => {
+    if (mobileView === 'terminal' && terminalBottomRef.current) {
+      terminalBottomRef.current.scrollIntoView({ behavior: 'smooth' });
+    }
+  }, [terminalHistory, mobileView]);
 
   const insertText = (text: string) => {
     if (activeEditorRef.current) {
@@ -2025,6 +2060,9 @@ export default function App() {
       const savedAppTheme = await db.getItem('reversx_app_theme');
       if (savedAppTheme) setAppThemeName(savedAppTheme);
 
+      const savedUiStyle = await db.getItem('reversx_ui_style');
+      if (savedUiStyle) setUiStyle(savedUiStyle as any);
+
       const savedIconTheme = await db.getItem('reversx_icon_theme');
       if (savedIconTheme) setIconThemeName(savedIconTheme);
 
@@ -2107,6 +2145,10 @@ export default function App() {
   useEffect(() => {
     db.setItem('reversx_editor_theme', editorThemeName);
   }, [editorThemeName]);
+
+  useEffect(() => {
+    db.setItem('reversx_ui_style', uiStyle);
+  }, [uiStyle]);
 
   useEffect(() => {
     db.setItem('reversx_app_theme', appThemeName);
@@ -2977,7 +3019,7 @@ export default function App() {
             position: fixed;
             bottom: 0;
             width: 100%;
-            background: #007acc;
+            background: #d97706;
             color: white;
             font-size: 11px;
             padding: 4px 15px;
@@ -4431,7 +4473,7 @@ export default function App() {
                 </p>
                 <button
                   onClick={() => setIsLoggedIn(true)}
-                  className="w-full py-2 bg-[#007acc] hover:bg-[#0062a3] active:bg-[#004e82] text-white rounded font-medium text-[13px] transition-all flex items-center justify-center gap-2 shadow-md shadow-[#007acc]/10 cursor-pointer"
+                  className="w-full py-2 bg-[#007acc] hover:bg-[#0062a3] active:bg-[#004e82] text-white rounded font-medium text-[13px] transition-all flex items-center justify-center gap-2 shadow-md shadow-blue-600/10 cursor-pointer"
                 >
                   <SquareTerminal size={14} />
                   <span>Login to IDE</span>
@@ -4509,7 +4551,7 @@ export default function App() {
                         }, 800);
                       }
                     }}
-                    className="w-full py-2 bg-[#007acc] hover:bg-[#0062a3] active:bg-[#004e82] text-white rounded font-medium text-[13px] transition-all flex items-center justify-center gap-2 shadow-md shadow-[#007acc]/10 cursor-pointer"
+                    className="w-full py-2 bg-[#007acc] hover:bg-[#0062a3] active:bg-[#004e82] text-white rounded font-medium text-[13px] transition-all flex items-center justify-center gap-2 shadow-md shadow-blue-600/10 cursor-pointer"
                   >
                     <RefreshCw size={14} className="animate-spin" style={{ animationDuration: '3s' }} />
                     <span>Re-detect / Try Again</span>
@@ -4531,7 +4573,7 @@ export default function App() {
   return (
     <IconContext.Provider value={iconThemeName}>
       <FileIconSizeContext.Provider value={fileIconSize}>
-      <div style={{ fontFamily: FONT_OPTIONS[appFontName] }} className={`flex flex-col h-full w-full bg-background text-foreground overflow-hidden relative`}>
+      <div style={{ fontFamily: FONT_OPTIONS[appFontName] }} className={`flex flex-col h-full w-full bg-background text-foreground overflow-hidden relative ${uiStyle === 'material' ? 'material-ui' : ''}`}>
       
       {/* Hidden file inputs available globally */}
       <input 
@@ -4690,7 +4732,7 @@ export default function App() {
                   <button 
                     onClick={handleNameSubmit}
                     disabled={!tempName.trim()}
-                    className="w-full py-4 bg-[#007ACC] hover:bg-[#006BB3] active:bg-[#005a9e] text-white font-medium rounded-none transition-all disabled:opacity-20 disabled:cursor-not-allowed"
+                    className="w-full py-4 bg-[#007acc] hover:bg-[#0062a3] active:bg-[#004e82] text-white font-medium rounded-none transition-all disabled:opacity-20 disabled:cursor-not-allowed"
                   >
                     Start Building
                   </button>
@@ -4736,7 +4778,7 @@ export default function App() {
                   <button 
                     onClick={handleProjectNamingSubmit}
                     disabled={!pendingProjectName.trim()}
-                    className="w-full py-4 bg-[#007ACC] hover:bg-[#006BB3] active:bg-[#005a9e] text-white font-medium rounded-none transition-all disabled:opacity-20 disabled:cursor-not-allowed"
+                    className="w-full py-4 bg-[#007acc] hover:bg-[#0062a3] active:bg-[#004e82] text-white font-medium rounded-none transition-all disabled:opacity-20 disabled:cursor-not-allowed"
                   >
                     Submit
                   </button>
@@ -5003,7 +5045,62 @@ export default function App() {
         {/* Main Editor/Preview Container */}
         <div className={`flex-1 relative overflow-hidden bg-background flex flex-col pt-2`}>
           {(!showPreview && mobileView !== 'preview') ? (
-            <div className="flex-1 flex font-sans overflow-hidden">
+            mobileView === 'terminal' ? (
+              <div className="flex-1 flex flex-col bg-[#121212] text-foreground h-full overflow-hidden select-none">
+                {/* Terminal Header */}
+                <div className="h-9 px-4 border-b border-white/5 flex items-center justify-between bg-[#18181c] shrink-0">
+                  <div className="flex items-center gap-2">
+                    <SquareTerminal size={14} className="text-accent" />
+                    <span className="text-[11px] font-bold uppercase tracking-wider text-foreground-muted font-sans">Terminal</span>
+                  </div>
+                  <button 
+                    onClick={() => setTerminalHistory([])}
+                    className="px-2 py-1 rounded bg-[#2b2b2b] text-zinc-300 hover:text-white hover:bg-[#333333] active:scale-95 transition-all text-[10px] font-semibold font-sans border border-white/5"
+                    title="Clear Terminal"
+                  >
+                    Clear History
+                  </button>
+                </div>
+                
+                {/* Terminal History & Input */}
+                <div className="flex-1 p-4 overflow-y-auto font-mono text-xs space-y-2 bg-[#121212] text-green-400 custom-scrollbar">
+                  {terminalHistory.map((h, i) => (
+                    <div key={i} className="whitespace-pre-wrap leading-relaxed">
+                      {h.type === 'cmd' && (
+                        <span className="text-[#007acc] font-bold">$ {h.text}</span>
+                      )}
+                      {h.type === 'output' && (
+                        <span className="text-zinc-300">{h.text}</span>
+                      )}
+                      {h.type === 'error' && (
+                        <span className="text-red-400 font-medium">{h.text}</span>
+                      )}
+                    </div>
+                  ))}
+                  
+                  {/* Terminal Input Line */}
+                  <form 
+                    onSubmit={(e) => {
+                      e.preventDefault();
+                      handleTerminalCommand(terminalInput);
+                    }}
+                    className="flex items-center gap-1.5 text-xs py-1"
+                  >
+                    <span className="text-[#007acc] font-bold shrink-0">$</span>
+                    <input 
+                      type="text"
+                      value={terminalInput}
+                      onChange={(e) => setTerminalInput(e.target.value)}
+                      placeholder="Type a command (try 'help')..."
+                      className="flex-1 bg-transparent border-none outline-none text-green-400 caret-white focus:ring-0 focus:outline-none p-0 text-xs font-mono"
+                      autoFocus
+                    />
+                  </form>
+                  <div ref={terminalBottomRef} />
+                </div>
+              </div>
+            ) : (
+              <div className="flex-1 flex font-sans overflow-hidden">
 
               {/* VS Code Style File Explorer */}
               <div 
@@ -5439,7 +5536,7 @@ export default function App() {
                                     className="pl-7 pr-3 h-[22px] py-1 flex items-center justify-between text-[11px] font-mono text-[var(--sidebar-fg)]/60 hover:text-[var(--sidebar-fg)] hover:bg-[var(--sidebar-subtle)]/30 cursor-pointer group/item select-none"
                                   >
                                     <span className="truncate flex-1 flex items-center gap-2">
-                                      <LucideBookmark size={11} className="text-sky-400 shrink-0 fill-sky-400" />
+                                      <LucideBookmark size={11} className="text-[#007acc] shrink-0 fill-[#007acc]" />
                                       <span className="text-zinc-500 text-[10px]">{b.lineNumber}:</span>
                                       <span className="text-[var(--sidebar-fg)]/80 truncate text-[10.5px]">{b.lineContent.trim() || '(empty line)'}</span>
                                     </span>
@@ -5575,12 +5672,12 @@ export default function App() {
                           <Info size={12} />
                         </button>
                       </div>
-                      <div className="bg-background border border-white/10 rounded-xl overflow-hidden shadow-2xl transition-all hover:border-white/20 focus-within:border-[#007acc] focus-within:ring-1 focus-within:ring-[#007acc]/50 group relative">
+                      <div className="bg-background border border-white/10 rounded-[3px] overflow-hidden shadow-md transition-all hover:border-white/20 focus-within:border-[#007acc] focus-within:ring-1 focus-within:ring-[#007acc]/50 group relative">
                         <div className="p-4">
                           {welcomeChatFiles.length > 0 && (
                             <div className="flex flex-wrap gap-2 mb-3">
                               {welcomeChatFiles.map((file, i) => (
-                                <div key={i} className="relative group/file w-14 h-14 rounded-md border border-white/10 bg-white/5 overflow-hidden flex items-center justify-center animate-in zoom-in-75 duration-200">
+                                <div key={i} className="relative group/file w-14 h-14 rounded-[2px] border border-white/10 bg-white/5 overflow-hidden flex items-center justify-center">
                                   {file.url ? (
                                     <img src={file.url} className="w-full h-full object-cover" alt="" />
                                   ) : (
@@ -5621,7 +5718,7 @@ export default function App() {
                           <div className="flex items-center gap-2">
                             <button 
                               onClick={() => welcomeChatFileInputRef.current?.click()}
-                              className="flex items-center gap-1.5 px-2 py-1 rounded-md hover:bg-white/5 text-[11px] text-white/40 transition-colors cursor-pointer"
+                              className="flex items-center gap-1.5 px-2 py-1 rounded-[2px] hover:bg-white/5 text-[11px] text-white/40 transition-colors cursor-pointer"
                             >
                               <Plus size={14} />
                               <span className="font-medium">Context</span>
@@ -5630,11 +5727,11 @@ export default function App() {
                             <div className="relative">
                               <button 
                                 onClick={() => setIsAgentDropdownOpen(!isAgentDropdownOpen)}
-                                className={`flex items-center gap-1.5 px-2 py-1 rounded-md transition-all cursor-pointer ${
+                                className={`flex items-center gap-1.5 px-2 py-1 rounded-[2px] transition-all cursor-pointer ${
                                   isAgentDropdownOpen ? 'bg-white/10 text-white' : 'hover:bg-white/5 text-white/40 hover:text-white/60'
                                 }`}
                               >
-                                <Drone size={12} className={isAgentDropdownOpen ? 'text-blue-400' : ''} />
+                                <Drone size={12} className={isAgentDropdownOpen ? 'text-[#007acc]' : ''} />
                                 <span className="text-[11px] font-medium">{selectedAgent}</span>
                                 <ChevronDown size={10} className={`transition-transform duration-300 ${isAgentDropdownOpen ? 'rotate-180' : ''}`} />
                               </button>
@@ -5645,7 +5742,7 @@ export default function App() {
                                     
                                     
                                     
-                                    className="absolute bottom-full left-0 mb-2 w-32 bg-sidebar border border-[#454545] rounded shadow-xl overflow-hidden z-[100]"
+                                    className="absolute bottom-full left-0 mb-2 w-32 bg-sidebar border border-[#454545] rounded-[3px] shadow-xl overflow-hidden z-[100]"
                                   >
                                     <div className="p-1 space-y-0.5">
                                       {['Agent v1', 'Chat', 'Research'].map((agent) => (
@@ -5655,7 +5752,7 @@ export default function App() {
                                             setSelectedAgent(agent);
                                             setIsAgentDropdownOpen(false);
                                           }}
-                                          className={`w-full px-2.5 py-1.5 text-left text-[11px] rounded transition-colors flex items-center justify-between group active:bg-white/5 ${
+                                          className={`w-full px-2.5 py-1.5 text-left text-[11px] rounded-[2px] transition-colors flex items-center justify-between group active:bg-white/5 ${
                                             selectedAgent === agent 
                                               ? 'bg-[#37373d] text-white' 
                                               : 'text-[#cccccc] hover:bg-[#2a2d2e] hover:text-white'
@@ -5674,11 +5771,11 @@ export default function App() {
                           <div className="flex items-center gap-2">
                              <button 
                                onClick={() => toggleVoiceInput()}
-                               className={`h-7 w-7 flex items-center justify-center rounded-md transition-all cursor-pointer ${isListening ? 'bg-red-500/20 text-red-500 animate-pulse' : 'bg-white/5 text-white/40 hover:bg-white/10 active:bg-white/10'}`}
+                               className={`h-7 w-7 flex items-center justify-center rounded-[2px] transition-all cursor-pointer ${isListening ? 'bg-red-500/20 text-red-500 animate-pulse' : 'bg-white/5 text-white/40 hover:bg-white/10 active:bg-white/10'}`}
                              >
                                <Mic size={14} />
                              </button>
-                             <div className="hidden sm:flex items-center gap-1 px-1.5 py-0.5 rounded bg-white/5 border border-white/10">
+                             <div className="hidden sm:flex items-center gap-1 px-1.5 py-0.5 rounded-[2px] bg-white/5 border border-white/10">
                                 <span className="text-[9px] text-white/30 font-bold">⌘ K</span>
                              </div>
                              <button 
@@ -5694,8 +5791,8 @@ export default function App() {
                                  setWelcomeChatFiles([]);
                                  setMobileView('chat');
                                  handleSend();
-                               }}
-                               className="h-7 w-7 flex items-center justify-center rounded-md bg-white/10 text-white transition-all hover:scale-105 active:bg-white/20 cursor-pointer"
+                                }}
+                               className="h-7 w-7 flex items-center justify-center rounded-[2px] bg-white/10 text-white transition-all hover:bg-white/20 cursor-pointer"
                              >
                                <ArrowUp size={16} strokeWidth={2.5} />
                              </button>
@@ -5843,7 +5940,8 @@ export default function App() {
                 )}
               </div>
             </div>
-          ) : (
+          )
+        ) : (
             <div className={`h-full w-full relative md:pt-0 pt-10 flex flex-col items-center transition-all duration-500 ${previewDevice !== 'desktop' ? 'bg-[#121212] p-8 overflow-auto' : 'bg-white'} custom-scrollbar`}>
               <div className={`relative transition-all duration-500 shadow-2xl overflow-hidden shrink-0 flex flex-col items-center ${previewDevice === 'desktop' ? '' : 'my-auto'}`} style={{
                 width: previewDevice === 'mobile' ? '375px' : previewDevice === 'laptop' ? '1024px' : '100%',
@@ -5959,17 +6057,23 @@ export default function App() {
       <div className={`h-11 border-t border-border bg-sidebar flex items-center justify-between px-8 z-50 ${mobileView === 'chat' ? 'border-t-0' : ''}`}>
         <button 
           onClick={() => {
-            const currentIndex = enabledMobileTabs.indexOf(showSettingsMenu ? 'settings' : (mobileView === 'preview' ? 'preview' : 'editor'));
+            const currentTab = showSettingsMenu ? 'settings' : (mobileView === 'preview' ? 'preview' : (mobileView === 'terminal' ? 'terminal' : 'editor'));
+            const currentIndex = enabledMobileTabs.indexOf(currentTab);
             if (currentIndex !== -1) {
               const prevIndex = (currentIndex - 1 + enabledMobileTabs.length) % enabledMobileTabs.length;
               const prevTab = enabledMobileTabs[prevIndex];
               if (prevTab === 'editor') {
                 setMobileView('editor');
+                setShowPreview(false);
                 setShowSettingsMenu(false);
               } else if (prevTab === 'preview') {
                 setMobileView('preview');
                 setPreviewFiles(files);
                 setShowPreview(true);
+                setShowSettingsMenu(false);
+              } else if (prevTab === 'terminal') {
+                setMobileView('terminal');
+                setShowPreview(false);
                 setShowSettingsMenu(false);
               } else if (prevTab === 'settings') {
                 setShowSettingsMenu(true);
@@ -5982,76 +6086,104 @@ export default function App() {
           <ChevronLeft size={16} />
         </button>
 
-        {enabledMobileTabs.includes('editor') && (
-          <button 
-            onClick={() => setMobileView('editor')}
-            onMouseDown={(e) => handleLongPressStart('Code Editor', e)}
-            onMouseUp={handleLongPressEnd}
-            onMouseLeave={handleLongPressEnd}
-            onTouchStart={(e) => handleLongPressStart('Code Editor', e)}
-            onTouchEnd={handleLongPressEnd}
-            className={`flex flex-col items-center justify-center min-w-[32px] h-full transition-all ${mobileView === 'editor' ? 'text-white border-b-2 border-white' : 'text-foreground/75 opacity-60'}`}
-          >
-            <Code size={14} strokeWidth={mobileView === 'editor' ? 2.5 : 1.5} />
-          </button>
-        )}
-        
-        {enabledMobileTabs.includes('preview') && (files[activeFile]?.language === 'html' || true) && (
-          <button 
-            onClick={() => { setMobileView('preview'); setPreviewFiles(files); setShowPreview(true); }}
-            onMouseDown={(e) => handleLongPressStart('App Preview', e)}
-            onMouseUp={handleLongPressEnd}
-            onMouseLeave={handleLongPressEnd}
-            onTouchStart={(e) => handleLongPressStart('App Preview', e)}
-            onTouchEnd={handleLongPressEnd}
-            className={`flex flex-col items-center justify-center min-w-[32px] h-full transition-all ${mobileView === 'preview' ? 'text-white border-b-2 border-white' : 'text-foreground/75 opacity-60'}`}
-          >
-            <Play size={14} strokeWidth={mobileView === 'preview' ? 2.5 : 1.5} />
-          </button>
-        )}
+        <div 
+          ref={tabContainerRef}
+          onTouchStart={handleTouchStart}
+          onTouchMove={handleTouchMove}
+          onTouchEnd={handleTouchEnd}
+          className="flex-1 mx-2 flex items-center justify-center gap-8 overflow-x-auto scrollbar-none scroll-smooth touch-pan-x h-full py-1"
+          style={{ scrollbarWidth: 'none', msOverflowStyle: 'none' }}
+        >
+          {enabledMobileTabs.includes('editor') && (
+            <button 
+              onClick={() => { setMobileView('editor'); setShowPreview(false); setShowSettingsMenu(false); }}
+              onMouseDown={(e) => handleLongPressStart('Code Editor', e)}
+              onMouseUp={handleLongPressEnd}
+              onMouseLeave={handleLongPressEnd}
+              onTouchStart={(e) => handleLongPressStart('Code Editor', e)}
+              onTouchEnd={handleLongPressEnd}
+              className={`flex flex-col items-center justify-center min-w-[32px] h-full transition-all shrink-0 ${mobileView === 'editor' && !showSettingsMenu ? 'text-white border-b-2 border-white' : 'text-foreground/75 opacity-60'}`}
+            >
+              <Code size={14} strokeWidth={mobileView === 'editor' && !showSettingsMenu ? 2.5 : 1.5} />
+            </button>
+          )}
+          
+          {enabledMobileTabs.includes('preview') && (files[activeFile]?.language === 'html' || true) && (
+            <button 
+              onClick={() => { setMobileView('preview'); setPreviewFiles(files); setShowPreview(true); setShowSettingsMenu(false); }}
+              onMouseDown={(e) => handleLongPressStart('App Preview', e)}
+              onMouseUp={handleLongPressEnd}
+              onMouseLeave={handleLongPressEnd}
+              onTouchStart={(e) => handleLongPressStart('App Preview', e)}
+              onTouchEnd={handleLongPressEnd}
+              className={`flex flex-col items-center justify-center min-w-[32px] h-full transition-all shrink-0 ${mobileView === 'preview' && !showSettingsMenu ? 'text-white border-b-2 border-white' : 'text-foreground/75 opacity-60'}`}
+            >
+              <Play size={14} strokeWidth={mobileView === 'preview' && !showSettingsMenu ? 2.5 : 1.5} />
+            </button>
+          )}
 
+          {enabledMobileTabs.includes('terminal') && (
+            <button 
+              onClick={() => { setMobileView('terminal'); setShowPreview(false); setShowSettingsMenu(false); }}
+              onMouseDown={(e) => handleLongPressStart('Terminal', e)}
+              onMouseUp={handleLongPressEnd}
+              onMouseLeave={handleLongPressEnd}
+              onTouchStart={(e) => handleLongPressStart('Terminal', e)}
+              onTouchEnd={handleLongPressEnd}
+              className={`flex flex-col items-center justify-center min-w-[32px] h-full transition-all shrink-0 ${mobileView === 'terminal' && !showSettingsMenu ? 'text-white border-b-2 border-white' : 'text-foreground/75 opacity-60'}`}
+            >
+              <SquareTerminal size={14} strokeWidth={mobileView === 'terminal' && !showSettingsMenu ? 2.5 : 1.5} />
+            </button>
+          )}
 
-        {enabledMobileTabs.includes('explorer') && (
-          <button 
-            onClick={() => { setIsExplorerOpen(true); }}
-            onMouseDown={(e) => handleLongPressStart('File Explorer', e)}
-            onMouseUp={handleLongPressEnd}
-            onMouseLeave={handleLongPressEnd}
-            onTouchStart={(e) => handleLongPressStart('File Explorer', e)}
-            onTouchEnd={handleLongPressEnd}
-            className={`flex flex-col items-center justify-center min-w-[32px] h-full transition-all ${isExplorerOpen ? 'text-white border-b-2 border-white' : 'text-foreground/75 opacity-60'}`}
-          >
-            <Files size={14} strokeWidth={isExplorerOpen ? 2.5 : 1.5} />
-          </button>
-        )}
+          {enabledMobileTabs.includes('explorer') && (
+            <button 
+              onClick={() => { setIsExplorerOpen(true); }}
+              onMouseDown={(e) => handleLongPressStart('File Explorer', e)}
+              onMouseUp={handleLongPressEnd}
+              onMouseLeave={handleLongPressEnd}
+              onTouchStart={(e) => handleLongPressStart('File Explorer', e)}
+              onTouchEnd={handleLongPressEnd}
+              className={`flex flex-col items-center justify-center min-w-[32px] h-full transition-all shrink-0 ${isExplorerOpen ? 'text-white border-b-2 border-white' : 'text-foreground/75 opacity-60'}`}
+            >
+              <Files size={14} strokeWidth={isExplorerOpen ? 2.5 : 1.5} />
+            </button>
+          )}
 
-        {enabledMobileTabs.includes('settings') && (
-          <button 
-            onClick={() => { setShowSettingsMenu(!showSettingsMenu); }}
-            onMouseDown={(e) => handleLongPressStart('Settings', e)}
-            onMouseUp={handleLongPressEnd}
-            onMouseLeave={handleLongPressEnd}
-            onTouchStart={(e) => handleLongPressStart('Settings', e)}
-            onTouchEnd={handleLongPressEnd}
-            className={`flex flex-col items-center justify-center min-w-[32px] h-full transition-all ${showSettingsMenu ? 'text-white border-b-2 border-white' : 'text-foreground/75 opacity-60'}`}
-          >
-            <Settings size={14} strokeWidth={showSettingsMenu ? 2.5 : 1.5} />
-          </button>
-        )}
+          {enabledMobileTabs.includes('settings') && (
+            <button 
+              onClick={() => { setShowSettingsMenu(true); }}
+              onMouseDown={(e) => handleLongPressStart('Settings', e)}
+              onMouseUp={handleLongPressEnd}
+              onMouseLeave={handleLongPressEnd}
+              onTouchStart={(e) => handleLongPressStart('Settings', e)}
+              onTouchEnd={handleLongPressEnd}
+              className={`flex flex-col items-center justify-center min-w-[32px] h-full transition-all shrink-0 ${showSettingsMenu ? 'text-white border-b-2 border-white' : 'text-foreground/75 opacity-60'}`}
+            >
+              <Settings size={14} strokeWidth={showSettingsMenu ? 2.5 : 1.5} />
+            </button>
+          )}
+        </div>
 
         <button 
           onClick={() => {
-            const currentIndex = enabledMobileTabs.indexOf(showSettingsMenu ? 'settings' : (mobileView === 'preview' ? 'preview' : 'editor'));
+            const currentTab = showSettingsMenu ? 'settings' : (mobileView === 'preview' ? 'preview' : (mobileView === 'terminal' ? 'terminal' : 'editor'));
+            const currentIndex = enabledMobileTabs.indexOf(currentTab);
             if (currentIndex !== -1) {
               const nextIndex = (currentIndex + 1) % enabledMobileTabs.length;
               const nextTab = enabledMobileTabs[nextIndex];
               if (nextTab === 'editor') {
                 setMobileView('editor');
+                setShowPreview(false);
                 setShowSettingsMenu(false);
               } else if (nextTab === 'preview') {
                 setMobileView('preview');
                 setPreviewFiles(files);
                 setShowPreview(true);
+                setShowSettingsMenu(false);
+              } else if (nextTab === 'terminal') {
+                setMobileView('terminal');
+                setShowPreview(false);
                 setShowSettingsMenu(false);
               } else if (nextTab === 'settings') {
                 setShowSettingsMenu(true);
@@ -6091,6 +6223,8 @@ export default function App() {
         onClose={() => setShowSettingsMenu(false)}
         appThemeName={appThemeName}
         setAppThemeName={setAppThemeName}
+        uiStyle={uiStyle}
+        setUiStyle={setUiStyle}
         iconThemeName={iconThemeName}
         setIconThemeName={setIconThemeName}
         editorFontFamily={editorFontFamily}

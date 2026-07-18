@@ -79,7 +79,7 @@ const CodeBlockComponent = React.memo(function CodeBlockComponent({ language, co
           color: '#cccccc',
         }}
       >
-        <span className="font-semibold tracking-wider text-blue-400">{language.toUpperCase()}</span>
+        <span className="font-semibold tracking-wider text-[#007acc]">{language.toUpperCase()}</span>
         <button
           onClick={handleCopy}
           className="flex items-center gap-1.5 transition-colors px-2 py-1 rounded text-[11px] font-medium border"

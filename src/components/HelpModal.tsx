@@ -92,14 +92,14 @@ export const HelpModal: React.FC<HelpModalProps> = ({
                   <h3 className="text-sm font-bold text-accent uppercase tracking-widest">Editor Tools & Buttons</h3>
                   <div className="bg-white/[0.02] border border-white/5 rounded-none p-6 space-y-5">
                     <div className="flex items-start gap-4">
-                      <Sparkles size={16} className="text-orange-400 shrink-0 mt-0.5" />
+                      <Sparkles size={16} className="text-accent shrink-0 mt-0.5" />
                       <div>
                         <span className="text-[13px] font-bold text-white block">AI Assistants</span>
                         <span className="text-[12px] text-foreground/50">Found in the "More Actions" menu. Use Refactor to clean code or Document to add comments.</span>
                       </div>
                     </div>
                     <div className="flex items-start gap-4">
-                      <Edit size={16} className="text-blue-400 shrink-0 mt-0.5" />
+                      <Edit size={16} className="text-accent shrink-0 mt-0.5" />
                       <div>
                         <span className="text-[13px] font-bold text-white block">Format Code</span>
                         <span className="text-[12px] text-foreground/50">Instantly prettifies your code to keep it standardized and professional.</span>

@@ -43,7 +43,7 @@ export const AttachmentEditorModal = React.forwardRef<HTMLDivElement, Attachment
       >
         <div className="flex items-center justify-between px-6 py-4 border-b border-white/10 bg-white/[0.02]">
           <div className="flex items-center gap-3">
-            <Files size={18} className="text-blue-400" />
+            <Files size={18} className="text-accent" />
             <span className="text-sm font-medium text-white/90">{editingData.attachment.name}</span>
           </div>
           <button onClick={onClose} className="text-white/70 hover:text-white transition-colors">

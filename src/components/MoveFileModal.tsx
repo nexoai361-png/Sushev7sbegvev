@@ -65,7 +65,7 @@ export const MoveFileModal: React.FC<MoveFileModalProps> = ({
         {/* Title Bar */}
         <div className="flex items-center justify-between bg-[#252526] px-4 py-2.5 border-b border-[#2d2d2d] text-zinc-300">
           <div className="flex items-center gap-2">
-            <Move size={14} className="text-amber-500" />
+            <Move size={14} className="text-[#007acc]" />
             <span className="text-xs font-semibold tracking-wide">MOVE / CUT FILE</span>
           </div>
           <button 
@@ -99,7 +99,7 @@ export const MoveFileModal: React.FC<MoveFileModalProps> = ({
                 if (e.key === 'Enter') confirmMoveFile();
                 if (e.key === 'Escape') onClose();
               }}
-              className="w-full bg-[#3c3c3c]/30 border border-[#3c3c3c] focus:border-amber-500 focus:ring-1 focus:ring-amber-500 rounded-[2px] px-2.5 py-2 text-xs text-white font-mono focus:outline-none"
+              className="w-full bg-[#3c3c3c]/30 border border-[#3c3c3c] focus:border-[#007acc] focus:ring-1 focus:ring-[#007acc]/30 rounded-[2px] px-2.5 py-2 text-xs text-white font-mono focus:outline-none"
               placeholder="Enter destination path..."
             />
           </div>
@@ -108,7 +108,7 @@ export const MoveFileModal: React.FC<MoveFileModalProps> = ({
           {directories.length > 0 && (
             <div className="flex flex-col gap-1.5">
               <div className="text-[11px] text-zinc-400 uppercase tracking-wider flex items-center gap-1">
-                <Folder size={11} className="text-amber-500" />
+                <Folder size={11} className="text-[#007acc]" />
                 <span>Quick Destination Folder</span>
               </div>
               <div className="flex flex-wrap gap-1 max-h-[110px] overflow-y-auto bg-[#1a1a1a] border border-[#2d2d2d] p-1.5 rounded-[2px] custom-scrollbar">
@@ -120,11 +120,11 @@ export const MoveFileModal: React.FC<MoveFileModalProps> = ({
                       onClick={() => handleSelectFolder(dir)}
                       className={`px-2 py-0.5 text-[10px] font-mono rounded-[2px] transition-all flex items-center gap-1 border ${
                         isActive 
-                          ? 'bg-amber-500/15 text-white border-amber-500 font-medium' 
+                          ? 'bg-[#007acc]/15 text-white border-[#007acc] font-medium' 
                           : 'bg-[#252526] hover:bg-[#2d2d2d] text-zinc-400 border-transparent hover:text-zinc-200'
                       }`}
                     >
-                      <Folder size={9} className={isActive ? 'text-amber-400' : 'text-zinc-500'} />
+                      <Folder size={9} className={isActive ? 'text-[#007acc]' : 'text-zinc-500'} />
                       {dir === '/' ? '/' : dir}
                     </button>
                   );
@@ -145,7 +145,7 @@ export const MoveFileModal: React.FC<MoveFileModalProps> = ({
           </button>
           <button 
             onClick={confirmMoveFile}
-            className="px-5 py-1.5 bg-amber-600 hover:bg-amber-500 active:bg-amber-700 text-white text-xs font-semibold rounded-[2px] transition-colors"
+            className="px-5 py-1.5 bg-[#007acc] hover:bg-[#0062a3] active:bg-[#004e82] text-white text-xs font-semibold rounded-[2px] transition-colors"
           >
             Move File
           </button>
