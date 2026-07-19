@@ -519,141 +519,56 @@ body {
   font-family: var(--app-ui-font, "Segoe UI", -apple-system, BlinkMacSystemFont, "Segoe UI Web (West European)", sans-serif) !important;
 }
 
-/* --- Material UI Theme Styles --- */
-.material-ui {
-  /* Soft, clean spacing and letter spacing */
+/* --- Ant Design Theme Styles --- */
+.antd-ui {
+  /* Modern, polished spacing and letter spacing */
   letter-spacing: 0.01em;
 }
 
-/* Override default sharp corners to small, elegant radii */
-.material-ui *,
-.material-ui button,
-.material-ui a,
-.material-ui [role="button"],
-.material-ui span,
-.material-ui div,
-.material-ui p,
-.material-ui h1,
-.material-ui h2,
-.material-ui h3,
-.material-ui h4,
-.material-ui h5,
-.material-ui h6,
-.material-ui label,
-.material-ui input,
-.material-ui textarea {
+/* Ant Design Mode: Refined Typography & Sizing */
+.antd-ui *:not(.cm-editor):not(.cm-editor *):not(.cm-scroller):not(.cm-scroller *):not(.markdown-content):not(.markdown-content *):not(code):not(pre) {
+  font-size: 12px !important;
+}
+
+/* Specific interactive elements rounding */
+.antd-ui button, 
+.antd-ui [role="button"],
+.antd-ui .ant-btn,
+.antd-ui .ant-select-selector,
+.antd-ui .ant-input,
+.antd-ui .ant-input-number,
+.antd-ui .ant-picker,
+.antd-ui .ant-switch {
   border-radius: 4px !important;
 }
 
-/* Buttons in Material Style */
-.material-ui button, 
-.material-ui [role="button"] {
-  border-radius: 4px !important;
-  font-weight: 500 !important;
-  box-shadow: none !important;
-  transition: all 0.1s ease !important;
+/* Buttons and Clickables */
+.antd-ui button, 
+.antd-ui [role="button"],
+.antd-ui .ant-btn {
+  font-weight: 400 !important;
+  transition: all 0.2s cubic-bezier(0.645, 0.045, 0.355, 1) !important;
 }
 
-.material-ui button:hover {
-  transform: none !important;
-  box-shadow: none !important;
-  background-color: rgba(255, 255, 255, 0.08) !important;
-}
-
-.material-ui button:active {
-  transform: none !important;
-  box-shadow: none !important;
-}
-
-/* Input elements */
-.material-ui input,
-.material-ui textarea,
-.material-ui select {
-  border-radius: 4px !important;
-  background-color: rgba(0, 0, 0, 0.2) !important;
-  border: 1px solid #333333 !important;
-  padding: 6px 10px !important;
-  transition: border-color 0.1s ease !important;
-}
-
-.material-ui input:focus,
-.material-ui textarea:focus {
-  border-color: #007acc !important;
-  box-shadow: none !important;
-}
-
-/* Panels, Modals, and Cards with flat borders and small radii */
-.material-ui .bg-sidebar,
-.material-ui .bg-background {
+/* Sidebar items should also be rounded in Ant mode */
+.antd-ui .file-tree-item,
+.antd-ui .tree-node,
+.antd-ui [class*="hover:bg-white/5"] {
   border-radius: 4px !important;
 }
 
-/* Modals should have standard flat edges with small rounded corners */
-.material-ui .fixed.left-4 {
-  border-radius: 4px !important;
-  border: 1px solid #333333 !important;
-  overflow: hidden;
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.5) !important;
-}
-
-/* File item lists and tree items */
-.material-ui .file-tree-item,
-.material-ui .tree-node,
-.material-ui [class*="hover:bg-white/5"] {
-  border-radius: 3px !important;
-  margin: 1px 2px !important;
-  transition: background-color 0.1s ease !important;
-}
-
-/* Active file tab or highlighted item in Material Style */
-.material-ui .bg-accent,
-.material-ui .bg-\[\#007acc\],
-.material-ui [class*="bg-[#007acc]"] {
-  border-radius: 3px !important;
-}
-
-/* Scrollbars */
-.material-ui ::-webkit-scrollbar {
-  width: 10px !important;
-  height: 10px !important;
-}
-
-.material-ui ::-webkit-scrollbar-thumb {
-  background: rgba(121, 121, 121, 0.2) !important;
-  border-radius: 2px !important;
-}
-
-.material-ui ::-webkit-scrollbar-thumb:hover {
-  background: rgba(121, 121, 121, 0.4) !important;
-}
-
-/* Small adjustments to specific elements */
-.material-ui .rounded-none {
-  border-radius: 0 !important;
-}
-
-.material-ui .rounded-\[2px\] {
-  border-radius: 2px !important;
-}
-
-/* Sidebar Minimizer / Tabs */
-.material-ui .border-r {
-  border-right-color: rgba(255, 255, 255, 0.04) !important;
-}
-
-.material-ui .border-b {
-  border-bottom-color: rgba(255, 255, 255, 0.04) !important;
-}
-
-.material-ui .border {
-  border-color: rgba(255, 255, 255, 0.06) !important;
-}
-
-/* Active editor tab - pill look */
-.material-ui .active-tab-indicator {
-  border-radius: 0 !important;
+/* Tabs and Active items */
+.antd-ui .active-tab-indicator {
   height: 2px !important;
-  bottom: 0 !important;
+  background-color: #1677ff !important;
 }
+
+.antd-ui .bg-accent,
+.antd-ui .bg-\[\#007acc\],
+.antd-ui [class*="bg-[#007acc]"] {
+  background-color: #1677ff !important;
+  border-radius: 4px !important;
+}
+
 
 

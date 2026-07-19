@@ -167,6 +167,8 @@ import { Share } from '@capacitor/share';
 import { Saf } from './lib/saf';
 import { registerPlugin, Capacitor } from '@capacitor/core';
 import { motion, AnimatePresence } from 'motion/react';
+import { ConfigProvider, theme as antdTheme } from 'antd';
+
 
 interface TermuxDetectorPluginType {
   checkTermuxInstalled(): Promise<{ installed: boolean }>;
@@ -642,9 +644,13 @@ export default function App() {
   const [deferredPrompt, setDeferredPrompt] = useState<any>(null);
   const [isInstallable, setIsInstallable] = useState(false);
   const [windowWidth, setWindowWidth] = useState(typeof window !== 'undefined' ? window.innerWidth : 1200);
+  const [windowHeight, setWindowHeight] = useState(typeof window !== 'undefined' ? window.innerHeight : 800);
 
   useEffect(() => {
-    const handleResize = () => setWindowWidth(window.innerWidth);
+    const handleResize = () => {
+      setWindowWidth(window.innerWidth);
+      setWindowHeight(window.innerHeight);
+    };
     window.addEventListener('resize', handleResize);
     return () => window.removeEventListener('resize', handleResize);
   }, []);
@@ -836,10 +842,12 @@ export default function App() {
   const [isSplitScreen, setIsSplitScreen] = useState(false);
   const [openFiles, setOpenFiles] = useState<string[]>([]);
   const [appThemeName, setAppThemeName] = useState('VS Code Dark');
-  const [uiStyle, setUiStyle] = useState<'default' | 'material'>('default');
+  const [uiStyle, setUiStyle] = useState<'default' | 'antd'>('default');
   const [iconThemeName, setIconThemeName] = useState('VS code');
   const [fileIconSize, setFileIconSize] = useState(16);
   const [appFontName, setAppFontName] = useState('System Font');
+  const [smallestWidthPortrait, setSmallestWidthPortrait] = useState(360);
+  const [smallestWidthLandscape, setSmallestWidthLandscape] = useState(600);
   const [bookmarks, setBookmarks] = useState<Bookmark[]>([]);
   const [shortcutPresetName, setShortcutPresetName] = useState(() => localStorage.getItem('reversx_shortcut_preset_name') || 'VS Code Default');
   const [customSymbolsStr, setCustomSymbolsStr] = useState(() => localStorage.getItem('reversx_custom_symbols') || '<, >, /, {, }, [, ], ;, (, ), ", \', :, =, !, &, |, +, -, *, %, ?, #, $, @, ^, ~, `');
@@ -1114,6 +1122,12 @@ export default function App() {
   }, [uiStyle, isDbLoaded]);
 
   useEffect(() => {
+    if (isDbLoaded) {
+      db.setItem('reversx_ui_style', uiStyle);
+    }
+  }, [uiStyle, isDbLoaded]);
+
+  useEffect(() => {
     if (isDbLoaded) idbSet('reversx_icon_theme', iconThemeName);
   }, [iconThemeName, isDbLoaded]);
 
@@ -1125,6 +1139,13 @@ export default function App() {
     if (isDbLoaded) idbSet('reversx_app_font', appFontName);
     document.documentElement.style.setProperty('--app-ui-font', FONT_OPTIONS[appFontName] || 'Inter, sans-serif');
   }, [appFontName, isDbLoaded]);
+
+  useEffect(() => {
+    if (isDbLoaded) {
+      idbSet('reversx_smallest_width_portrait', smallestWidthPortrait);
+      idbSet('reversx_smallest_width_landscape', smallestWidthLandscape);
+    }
+  }, [smallestWidthPortrait, smallestWidthLandscape, isDbLoaded]);
   
   useEffect(() => {
     if (isDbLoaded) idbSet('reversx_projects', projects);
@@ -1219,6 +1240,8 @@ export default function App() {
         setIconThemeName(await checkAndMigrate('reversx_icon_theme', false, 'VS code'));
         setFileIconSize(await checkAndMigrate('reversx_file_icon_size', false, 16));
         setAppFontName(await checkAndMigrate('reversx_app_font', false, 'System Font'));
+        setSmallestWidthPortrait(Number(await checkAndMigrate('reversx_smallest_width_portrait', false, 360)));
+        setSmallestWidthLandscape(Number(await checkAndMigrate('reversx_smallest_width_landscape', false, 600)));
         
         const loadedBookmarks = await checkAndMigrate('reversx_bookmarks', true, []);
         setBookmarks(loadedBookmarks);
@@ -4573,7 +4596,67 @@ export default function App() {
   return (
     <IconContext.Provider value={iconThemeName}>
       <FileIconSizeContext.Provider value={fileIconSize}>
-      <div style={{ fontFamily: FONT_OPTIONS[appFontName] }} className={`flex flex-col h-full w-full bg-background text-foreground overflow-hidden relative ${uiStyle === 'material' ? 'material-ui' : ''}`}>
+      <ConfigProvider
+        theme={{
+          algorithm: uiStyle === 'antd' ? antdTheme.darkAlgorithm : undefined,
+          token: {
+            colorPrimary: '#1677ff',
+            borderRadius: uiStyle === 'antd' ? 4 : 2,
+            fontSize: 12,
+            controlHeight: 24,
+            paddingContentHorizontal: 8,
+            colorBgContainer: '#1e1e1e',
+            colorBgElevated: '#252526',
+            colorBorder: '#434343',
+            colorText: '#cccccc',
+            colorTextHeading: '#ffffff',
+            colorBgBase: '#1e1e1e',
+          },
+          components: {
+            Select: {
+              fontSize: 12,
+              controlHeight: 26,
+              colorBgContainer: '#2d2d2d',
+            },
+            Input: {
+              fontSize: 12,
+              controlHeight: 26,
+              colorBgContainer: '#2d2d2d',
+            },
+            Button: {
+              fontSize: 12,
+              controlHeight: 28,
+            },
+            Slider: {
+              handleSize: 10,
+              handleSizeHover: 12,
+            },
+            Switch: {
+              controlHeight: 18,
+            }
+          }
+        }}
+      >
+        {(() => {
+          const isCurrentLandscape = windowWidth > windowHeight;
+          const currentSmallestWidth = isCurrentLandscape ? smallestWidthLandscape : smallestWidthPortrait;
+          const scale = windowWidth / currentSmallestWidth;
+
+          return (
+            <div 
+              style={{ 
+                fontFamily: FONT_OPTIONS[appFontName],
+                width: `${currentSmallestWidth}px`,
+                height: `${windowHeight / scale}px`,
+                transform: `scale(${scale})`,
+                transformOrigin: 'top left',
+                position: 'absolute',
+                top: 0,
+                left: 0
+              }} 
+              className={`flex flex-col bg-background text-foreground overflow-hidden relative ${uiStyle === 'antd' ? 'antd-ui' : ''}`}
+            >
+
       
       {/* Hidden file inputs available globally */}
       <input 
@@ -5123,7 +5206,7 @@ export default function App() {
                   ${isResizingExplorer ? '' : 'transition-all duration-300 ease-in-out'}
                   ${isExplorerOpen && !isEditorFullscreen && !isZenMode ? 'opacity-100 pointer-events-auto' : 'opacity-0 pointer-events-none'}
                   ${isDragging ? 'ring-2 ring-accent ring-inset bg-accent/5' : ''}
-                  fixed inset-y-0 left-0 z-[60] md:relative md:z-10
+                  ${(windowWidth < 768 && !isLandscape) ? 'fixed inset-y-0 left-0 z-[60]' : 'relative z-10'}
                 `}
               >
                 {/* Left Activity Bar */}
@@ -5403,7 +5486,9 @@ export default function App() {
                           activeFileMenu={activeFileMenu}
                           handleFileOpen={(name) => {
                             handleFileOpen(name);
-                            setIsExplorerOpen(false);
+                            if (windowWidth < 768 && !isLandscape) {
+                              setIsExplorerOpen(false);
+                            }
                           }}
                           setActiveFileMenu={setActiveFileMenu}
                           handleRenameFile={handleRenameFile}
@@ -5564,10 +5649,10 @@ export default function App() {
             </div>
 
               {/* Explorer Overlay Backdrop for Mobile */}
-              {isExplorerOpen && (
+              {isExplorerOpen && (windowWidth < 768 && !isLandscape) && (
                 <div 
                   onClick={() => setIsExplorerOpen(false)}
-                  className="fixed inset-0 bg-black/50 z-50 animate-in fade-in duration-300"
+                  className="fixed inset-0 bg-black/50 z-50 animate-in fade-in duration-300 md:hidden"
                 />
               )}
 
@@ -6245,6 +6330,10 @@ export default function App() {
         setCustomSymbolsStr={setCustomSymbolsStr}
         fileIconSize={fileIconSize}
         setFileIconSize={setFileIconSize}
+        smallestWidthPortrait={smallestWidthPortrait}
+        setSmallestWidthPortrait={setSmallestWidthPortrait}
+        smallestWidthLandscape={smallestWidthLandscape}
+        setSmallestWidthLandscape={setSmallestWidthLandscape}
       />
 
       <GithubExportModal 
@@ -6469,7 +6558,10 @@ export default function App() {
           onClose={() => setShowShortcutsCheatSheet(false)} 
         />
       </React.Fragment>
-      </div>
+            </div>
+          );
+        })()}
+      </ConfigProvider>
       </FileIconSizeContext.Provider>
     </IconContext.Provider>
   );

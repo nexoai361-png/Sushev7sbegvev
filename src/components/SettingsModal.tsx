@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { X, Minus, Plus, CheckCircle2 } from 'lucide-react';
+import { Select, Input, Slider, InputNumber, Button, Switch } from 'antd';
 import { APP_THEMES } from '../App';
 import { ICON_THEMES } from '../lib/icons';
 import { SYNTAX_THEMES } from '../utils/editorUtils';
@@ -10,8 +11,8 @@ interface SettingsModalProps {
   onClose: () => void;
   appThemeName: string;
   setAppThemeName: (theme: string) => void;
-  uiStyle: 'default' | 'material';
-  setUiStyle: (style: 'default' | 'material') => void;
+  uiStyle: 'default' | 'antd';
+  setUiStyle: (style: 'default' | 'antd') => void;
   iconThemeName: string;
   setIconThemeName: (theme: string) => void;
   editorFontFamily: string;
@@ -32,6 +33,10 @@ interface SettingsModalProps {
   setCustomSymbolsStr: (symbols: string) => void;
   fileIconSize: number;
   setFileIconSize: (size: number) => void;
+  smallestWidthPortrait: number;
+  setSmallestWidthPortrait: (width: number) => void;
+  smallestWidthLandscape: number;
+  setSmallestWidthLandscape: (width: number) => void;
 }
 
 const FONT_OPTIONS_MAP: Record<string, string> = {
@@ -65,6 +70,10 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
   setCustomSymbolsStr,
   fileIconSize,
   setFileIconSize,
+  smallestWidthPortrait,
+  setSmallestWidthPortrait,
+  smallestWidthLandscape,
+  setSmallestWidthLandscape,
 }) => {
   const [settingsCategory, setSettingsCategory] = useState<'commonly' | 'appearance' | 'editor' | 'syntax' | 'shortcuts' | 'application'>('commonly');
   const [searchQuery, setSearchQuery] = useState('');
@@ -73,7 +82,8 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
     'workbench.colorTheme',
     'editor.fontFamily',
     'editor.fontSize',
-    'window.uiStyle'
+    'window.uiStyle',
+    'window.smallestWidth'
   ];
 
   interface SettingItem {
@@ -90,16 +100,26 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
       id: 'uiStyle',
       title: 'UI Design Style',
       keyName: 'window.uiStyle',
-      description: 'Controls the overall UI aesthetics. Default mode keeps the sharp retro ReversX edges, while Material UI provides smoother, rounded surfaces.',
+      description: 'Controls the overall UI aesthetics. Default mode keeps the sharp retro ReversX edges, while Ant Design provides modern, polished components and layouts.',
       category: 'appearance',
-      render: () => (
+      render: () => uiStyle === 'antd' ? (
+        <Select
+          value={uiStyle}
+          onChange={(val) => setUiStyle(val as 'default' | 'antd')}
+          className="w-full max-w-md"
+          options={[
+            { label: 'Default (ReversX)', value: 'default' },
+            { label: 'Ant Design', value: 'antd' }
+          ]}
+        />
+      ) : (
         <select
           value={uiStyle}
-          onChange={(e) => setUiStyle(e.target.value as 'default' | 'material')}
+          onChange={(e) => setUiStyle(e.target.value as 'default' | 'antd')}
           className="w-full max-w-md h-7 bg-[#2d2d2d] border border-[#3c3c3c] focus:border-[#007acc] text-[#cccccc] text-[12px] px-2 rounded-[2px] outline-none cursor-pointer hover:bg-[#3c3c3c] transition-all"
         >
           <option value="default">Default (ReversX)</option>
-          <option value="material">Material UI</option>
+          <option value="antd">Ant Design</option>
         </select>
       )
     },
@@ -109,7 +129,14 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
       keyName: 'workbench.colorTheme',
       description: 'Specifies the active color scheme applied across the sidebar, terminals, and workspace background panels.',
       category: 'appearance',
-      render: () => (
+      render: () => uiStyle === 'antd' ? (
+        <Select
+          value={appThemeName}
+          onChange={(val) => setAppThemeName(val)}
+          className="w-full max-w-md"
+          options={Object.keys(APP_THEMES).map(t => ({ label: t, value: t }))}
+        />
+      ) : (
         <select
           value={appThemeName}
           onChange={(e) => setAppThemeName(e.target.value)}
@@ -127,7 +154,14 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
       keyName: 'workbench.iconTheme',
       description: 'Specifies the layout structure and file-association icons shown in the project Explorer tree.',
       category: 'appearance',
-      render: () => (
+      render: () => uiStyle === 'antd' ? (
+        <Select
+          value={iconThemeName}
+          onChange={(val) => setIconThemeName(val)}
+          className="w-full max-w-md"
+          options={Object.keys(ICON_THEMES).map(t => ({ label: t, value: t }))}
+        />
+      ) : (
         <select
           value={iconThemeName}
           onChange={(e) => setIconThemeName(e.target.value)}
@@ -145,7 +179,14 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
       keyName: 'window.systemUiFont',
       description: 'Sets the font family for application workspace panels, menus, and file systems.',
       category: 'appearance',
-      render: () => (
+      render: () => uiStyle === 'antd' ? (
+        <Select
+          value={appFontName}
+          onChange={(val) => setAppFontName(val)}
+          className="w-full max-w-md"
+          options={Object.keys(FONT_OPTIONS_MAP).map(f => ({ label: f, value: f }))}
+        />
+      ) : (
         <select
           value={appFontName}
           onChange={(e) => setAppFontName(e.target.value)}
@@ -163,7 +204,20 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
       keyName: 'workbench.fileIconSize',
       description: 'Controls the width and height dimensions of rendered file and folder indicators.',
       category: 'appearance',
-      render: () => (
+      render: () => uiStyle === 'antd' ? (
+        <div className="flex items-center gap-3 max-w-md">
+          <Slider 
+            min={10} max={32} value={fileIconSize} 
+            onChange={(val) => setFileIconSize(val)}
+            className="flex-1"
+          />
+          <InputNumber
+            min={10} max={32} value={fileIconSize}
+            onChange={(val) => setFileIconSize(val || 16)}
+            className="w-14"
+          />
+        </div>
+      ) : (
         <div className="flex items-center gap-3 max-w-md">
           <input 
             type="range" min="10" max="32" value={fileIconSize} 
@@ -180,12 +234,148 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
       )
     },
     {
+      id: 'smallestWidthPortrait',
+      title: 'Smallest Width (Portrait)',
+      keyName: 'window.smallestWidthPortrait',
+      description: 'Adjusts the UI scaling to control element density in Portrait mode. Higher values make UI elements smaller.',
+      category: 'appearance',
+      render: () => uiStyle === 'antd' ? (
+        <div className="flex items-center gap-3 max-w-md">
+          <Slider 
+            min={320} max={1200} value={smallestWidthPortrait} 
+            onChange={(val) => setSmallestWidthPortrait(val)}
+            className="flex-1"
+          />
+          <InputNumber
+            min={320} max={1200} value={smallestWidthPortrait}
+            onChange={(val) => setSmallestWidthPortrait(val || 360)}
+            className="w-20"
+          />
+        </div>
+      ) : (
+        <div className="flex items-center gap-3 max-w-md">
+          <input 
+            type="range" min="320" max="1200" value={smallestWidthPortrait} 
+            onChange={(e) => setSmallestWidthPortrait(parseInt(e.target.value))}
+            className="flex-1 accent-[#007acc] bg-[#2d2d2d] h-1 appearance-none cursor-pointer"
+          />
+          <input
+            type="number" min="320" max="1200" value={smallestWidthPortrait}
+            onChange={(e) => setSmallestWidthPortrait(Math.max(320, Math.min(1200, parseInt(e.target.value) || 360)))}
+            className="w-20 h-7 bg-[#2d2d2d] border border-[#3c3c3c] focus:border-[#007acc] text-white text-[12px] px-2 text-center rounded-[2px] outline-none"
+          />
+          <span className="text-[11px] text-[#858585]">dp</span>
+        </div>
+      )
+    },
+    {
+      id: 'smallestWidthLandscape',
+      title: 'Smallest Width (Landscape)',
+      keyName: 'window.smallestWidthLandscape',
+      description: 'Adjusts the UI scaling to control element density in Landscape mode. Useful for Bluetooth keyboard coding.',
+      category: 'appearance',
+      render: () => uiStyle === 'antd' ? (
+        <div className="flex items-center gap-3 max-w-md">
+          <Slider 
+            min={320} max={1500} value={smallestWidthLandscape} 
+            onChange={(val) => setSmallestWidthLandscape(val)}
+            className="flex-1"
+          />
+          <InputNumber
+            min={320} max={1500} value={smallestWidthLandscape}
+            onChange={(val) => setSmallestWidthLandscape(val || 600)}
+            className="w-20"
+          />
+        </div>
+      ) : (
+        <div className="flex items-center gap-3 max-w-md">
+          <input 
+            type="range" min="320" max="1500" value={smallestWidthLandscape} 
+            onChange={(e) => setSmallestWidthLandscape(parseInt(e.target.value))}
+            className="flex-1 accent-[#007acc] bg-[#2d2d2d] h-1 appearance-none cursor-pointer"
+          />
+          <input
+            type="number" min="320" max="1500" value={smallestWidthLandscape}
+            onChange={(e) => setSmallestWidthLandscape(Math.max(320, Math.min(1500, parseInt(e.target.value) || 600)))}
+            className="w-20 h-7 bg-[#2d2d2d] border border-[#3c3c3c] focus:border-[#007acc] text-white text-[12px] px-2 text-center rounded-[2px] outline-none"
+          />
+          <span className="text-[11px] text-[#858585]">dp</span>
+        </div>
+      )
+    },
+    {
       id: 'editorFontFamily',
       title: 'Editor: Font Family',
       keyName: 'editor.fontFamily',
       description: 'Controls the typeface used in code editors, log outputs, and shell buffers.',
       category: 'editor',
-      render: () => (
+      render: () => uiStyle === 'antd' ? (
+        <Select
+          value={editorFontFamily}
+          onChange={(val) => setEditorFontFamily(val)}
+          className="w-full max-w-md"
+          options={[
+            { label: 'VS Code Font', value: 'Consolas, Menlo, Monaco, "Courier New", monospace' },
+            { label: 'Consolas', value: 'Consolas, "Liberation Mono", Courier, monospace' },
+            { label: 'Courier New', value: '"Courier New", Courier, monospace' },
+            { label: 'Cascadia Code', value: '"Cascadia Code", "Segoe UI Mono", monospace' },
+            { label: 'Cascadia Mono', value: '"Cascadia Mono", monospace' },
+            { label: 'JetBrains Mono', value: '"JetBrains Mono", monospace' },
+            { label: 'Fira Code', value: '"Fira Code", monospace' },
+            { label: 'Fira Mono', value: '"Fira Mono", monospace' },
+            { label: 'Source Code Pro', value: '"Source Code Pro", monospace' },
+            { label: 'IBM Plex Mono', value: '"IBM Plex Mono", monospace' },
+            { label: 'Hack', value: 'Hack, monospace' },
+            { label: 'Inconsolata', value: 'Inconsolata, monospace' },
+            { label: 'Ubuntu Mono', value: '"Ubuntu Mono", monospace' },
+            { label: 'Roboto Mono', value: '"Roboto Mono", monospace' },
+            { label: 'SF Mono', value: '"SF Mono", Monaco, "Helvetica Neue", monospace' },
+            { label: 'Menlo', value: 'Menlo, Monaco, monospace' },
+            { label: 'Monaco', value: 'Monaco, "Courier New", monospace' },
+            { label: 'DejaVu Sans Mono', value: '"DejaVu Sans Mono", monospace' },
+            { label: 'Liberation Mono', value: '"Liberation Mono", monospace' },
+            { label: 'Anonymous Pro', value: '"Anonymous Pro", monospace' },
+            { label: 'Dank Mono', value: '"Dank Mono", monospace' },
+            { label: 'Input Mono', value: '"Input Mono", monospace' },
+            { label: 'Input Sans', value: '"Input Sans", sans-serif' },
+            { label: 'Iosevka', value: 'Iosevka, monospace' },
+            { label: 'Victor Mono', value: '"Victor Mono", monospace' },
+            { label: 'Operator Mono', value: '"Operator Mono", monospace' },
+            { label: 'PragmataPro', value: 'PragmataPro, monospace' },
+            { label: 'Cousine', value: 'Cousine, monospace' },
+            { label: 'PT Mono', value: '"PT Mono", monospace' },
+            { label: 'Space Mono', value: '"Space Mono", monospace' },
+            { label: 'Noto Sans Mono', value: '"Noto Sans Mono", monospace' },
+            { label: 'Spline Sans Mono', value: '"Spline Sans Mono", monospace' },
+            { label: 'Commit Mono', value: '"Commit Mono", monospace' },
+            { label: 'Geist Mono', value: '"Geist Mono", monospace' },
+            { label: 'Intel One Mono', value: '"Intel One Mono", monospace' },
+            { label: 'Recursive', value: 'Recursive, monospace' },
+            { label: 'Monoid', value: 'Monoid, monospace' },
+            { label: 'Go Mono', value: '"Go Mono", monospace' },
+            { label: 'Droid Sans Mono', value: '"Droid Sans Mono", monospace' },
+            { label: 'Proggy Clean', value: '"Proggy Clean", monospace' },
+            { label: 'Terminus', value: 'Terminus, monospace' },
+            { label: 'Tiny5', value: '"Tiny5", monospace' },
+            { label: 'Envy Code R', value: '"Envy Code R", monospace' },
+            { label: 'Hasklig', value: 'Hasklig, monospace' },
+            { label: 'Meslo LG', value: '"Meslo LG", monospace' },
+            { label: 'JuliaMono', value: 'JuliaMono, monospace' },
+            { label: 'Maple Mono', value: '"Maple Mono", monospace' },
+            { label: 'Agave', value: 'Agave, monospace' },
+            { label: 'Code New Roman', value: '"Code New Roman", monospace' },
+            { label: 'Overpass Mono', value: '"Overpass Mono", monospace' },
+            { label: 'Red Hat Mono', value: '"Red Hat Mono", monospace' },
+            { label: 'Fragment Mono', value: '"Fragment Mono", monospace' },
+            { label: 'CamingoCode', value: 'CamingoCode, monospace' },
+            { label: 'Sudo', value: 'Sudo, monospace' },
+            { label: 'Berkeley Mono', value: '"Berkeley Mono", monospace' },
+            { label: 'Cartograph CF', value: '"Cartograph CF", monospace' },
+            { label: 'Input Serif Mono', value: '"Input Serif Mono", serif, monospace' },
+            { label: 'Inter', value: '"Inter", sans-serif' }
+          ]}
+        />
+      ) : (
         <select
           value={editorFontFamily}
           onChange={(e) => setEditorFontFamily(e.target.value)}
@@ -262,7 +452,20 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
       keyName: 'editor.fontSize',
       description: 'Controls the font size in pixels for optimal reading comfort.',
       category: 'editor',
-      render: () => (
+      render: () => uiStyle === 'antd' ? (
+        <div className="flex items-center gap-3 max-w-md">
+          <Slider 
+            min={10} max={30} value={editorFontSize} 
+            onChange={(val) => setEditorFontSize(val)}
+            className="flex-1"
+          />
+          <InputNumber
+            min={10} max={30} value={editorFontSize}
+            onChange={(val) => setEditorFontSize(val || 14)}
+            className="w-14"
+          />
+        </div>
+      ) : (
         <div className="flex items-center gap-3 max-w-md">
           <input 
             type="range" min="10" max="30" value={editorFontSize} 
@@ -284,7 +487,20 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
       keyName: 'editor.lineHeight',
       description: 'Specifies the multiplier line spacing height of editor code lines.',
       category: 'editor',
-      render: () => (
+      render: () => uiStyle === 'antd' ? (
+        <div className="flex items-center gap-3 max-w-md">
+          <Slider 
+            min={1.0} max={2.2} step={0.1} value={editorLineHeight} 
+            onChange={(val) => setEditorLineHeight(val)}
+            className="flex-1"
+          />
+          <InputNumber
+            min={1.0} max={2.2} step={0.1} value={editorLineHeight}
+            onChange={(val) => setEditorLineHeight(val || 1.4)}
+            className="w-14"
+          />
+        </div>
+      ) : (
         <div className="flex items-center gap-3 max-w-md">
           <input 
             type="range" min="1.0" max="2.2" step="0.1" value={editorLineHeight} 
@@ -305,7 +521,14 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
       keyName: 'syntax.theme',
       description: 'Controls the active coloring palette used by the editor tokenizer to highlight code syntax.',
       category: 'syntax',
-      render: () => (
+      render: () => uiStyle === 'antd' ? (
+        <Select
+          value={syntaxThemeName}
+          onChange={(val) => setSyntaxThemeName(val)}
+          className="w-full max-w-md"
+          options={Object.keys(SYNTAX_THEMES).map(t => ({ label: t, value: t }))}
+        />
+      ) : (
         <select
           value={syntaxThemeName}
           onChange={(e) => setSyntaxThemeName(e.target.value)}
@@ -323,7 +546,17 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
       keyName: 'shortcuts.preset',
       description: 'Chooses the helper characters layout row for rapid button insertion in mobile environments.',
       category: 'shortcuts',
-      render: () => (
+      render: () => uiStyle === 'antd' ? (
+        <Select
+          value={shortcutPresetName}
+          onChange={(val) => setShortcutPresetName(val)}
+          className="w-full max-w-md"
+          options={[
+            ...SHORTCUT_PRESETS.map(p => ({ label: `${p.name} — ${p.description}`, value: p.name })),
+            { label: 'Custom Layout — Create your own layout design below', value: 'Custom Layout' }
+          ]}
+        />
+      ) : (
         <select
           value={shortcutPresetName}
           onChange={(e) => setShortcutPresetName(e.target.value)}
@@ -344,7 +577,15 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
       keyName: 'shortcuts.customSymbols',
       description: 'Enter your custom symbols (separated by spaces or commas) for the mobile helper toolbar.',
       category: 'shortcuts',
-      render: () => (
+      render: () => uiStyle === 'antd' ? (
+        <Input
+          value={customSymbolsStr}
+          onChange={(e) => setCustomSymbolsStr(e.target.value)}
+          className="w-full max-w-md"
+          placeholder="e.g. <, >, /, {, }, ;, (, )"
+          disabled={shortcutPresetName !== 'Custom Layout'}
+        />
+      ) : (
         <input
           type="text"
           value={customSymbolsStr}
@@ -361,7 +602,15 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
       keyName: 'application.install',
       description: 'Allows installing ReversX onto your local home screen or desktop to work offline.',
       category: 'application',
-      render: () => isInstallable ? (
+      render: () => uiStyle === 'antd' ? (
+        <Button
+          type="primary"
+          onClick={handleInstallClick}
+          disabled={!isInstallable}
+        >
+          Install PWA
+        </Button>
+      ) : isInstallable ? (
         <button
           onClick={handleInstallClick}
           className="px-4 py-1.5 bg-[#007acc] hover:bg-[#0062a3] active:bg-[#004e82] text-white text-[11px] rounded-[2px] transition-all font-medium cursor-pointer"
@@ -422,37 +671,50 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
             <div className="bg-[#1e1e1e] border-b border-[#252526] shrink-0">
               <div className="p-4 pb-0">
                 <div className="relative w-full max-w-2xl mb-3.5">
-                  <input
-                    type="text"
-                    placeholder="Search settings"
-                    value={searchQuery}
-                    onChange={(e) => setSearchQuery(e.target.value)}
-                    className="w-full h-7 bg-[#2d2d2d] border border-[#3c3c3c] focus:border-[#007acc] text-white text-[12px] pl-8 pr-8 rounded-[2px] outline-none transition-all placeholder-[#858585]"
-                  />
-                  <div className="absolute left-2.5 top-1/2 -translate-y-1/2 text-[#858585]">
-                    <svg width="12" height="12" viewBox="0 0 16 16" fill="currentColor">
-                      <path d="M15.7 14.3l-4.2-4.2c.8-1 1.3-2.2 1.3-3.6 0-3.1-2.5-5.6-5.6-5.6S1.6 3.4 1.6 6.5s2.5 5.6 5.6 5.6c1.4 0 2.6-.5 3.6-1.3l4.2 4.2c.2.2.5.3.7.3s.5-.1.7-.3c.4-.4.4-1 0-1.3zM7.2 10.6c-2.3 0-4.1-1.8-4.1-4.1S4.9 2.4 7.2 2.4s4.1 1.8 4.1 4.1-1.8 4.1-4.1 4.1z"/>
-                    </svg>
-                  </div>
-                  {searchQuery && (
-                    <button 
-                      onClick={() => setSearchQuery('')}
-                      className="absolute right-2 top-1/2 -translate-y-1/2 text-[#858585] hover:text-white"
-                    >
-                      <X size={12} />
-                    </button>
+                  {uiStyle === 'antd' ? (
+                    <Input
+                      placeholder="Search settings"
+                      value={searchQuery}
+                      onChange={(e) => setSearchQuery(e.target.value)}
+                      prefix={<svg width="12" height="12" viewBox="0 0 16 16" fill="currentColor" className="text-[#858585]"><path d="M15.7 14.3l-4.2-4.2c.8-1 1.3-2.2 1.3-3.6 0-3.1-2.5-5.6-5.6-5.6S1.6 3.4 1.6 6.5s2.5 5.6 5.6 5.6c1.4 0 2.6-.5 3.6-1.3l4.2 4.2c.2.2.5.3.7.3s.5-.1.7-.3c.4-.4.4-1 0-1.3zM7.2 10.6c-2.3 0-4.1-1.8-4.1-4.1S4.9 2.4 7.2 2.4s4.1 1.8 4.1 4.1-1.8 4.1-4.1 4.1z"/></svg>}
+                      allowClear
+                      className="antd-search-input"
+                    />
+                  ) : (
+                    <>
+                      <input
+                        type="text"
+                        placeholder="Search settings"
+                        value={searchQuery}
+                        onChange={(e) => setSearchQuery(e.target.value)}
+                        className="w-full h-7 bg-[#2d2d2d] border border-[#3c3c3c] focus:border-[#007acc] text-white text-[12px] pl-8 pr-8 rounded-[2px] outline-none transition-all placeholder-[#858585]"
+                      />
+                      <div className="absolute left-2.5 top-1/2 -translate-y-1/2 text-[#858585]">
+                        <svg width="12" height="12" viewBox="0 0 16 16" fill="currentColor">
+                          <path d="M15.7 14.3l-4.2-4.2c.8-1 1.3-2.2 1.3-3.6 0-3.1-2.5-5.6-5.6-5.6S1.6 3.4 1.6 6.5s2.5 5.6 5.6 5.6c1.4 0 2.6-.5 3.6-1.3l4.2 4.2c.2.2.5.3.7.3s.5-.1.7-.3c.4-.4.4-1 0-1.3zM7.2 10.6c-2.3 0-4.1-1.8-4.1-4.1S4.9 2.4 7.2 2.4s4.1 1.8 4.1 4.1-1.8 4.1-4.1 4.1z"/>
+                        </svg>
+                      </div>
+                      {searchQuery && (
+                        <button 
+                          onClick={() => setSearchQuery('')}
+                          className="absolute right-2 top-1/2 -translate-y-1/2 text-[#858585] hover:text-white"
+                        >
+                          <X size={12} />
+                        </button>
+                      )}
+                    </>
                   )}
                 </div>
 
                 {/* User vs Workspace Subtabs */}
                 <div className="flex gap-4 text-[12px] select-none mb-2">
-                  <button className="pb-1.5 border-b-2 border-[#007acc] text-[#e1e1e1] font-medium">User</button>
+                  <button className={`pb-1.5 border-b-2 ${uiStyle === 'antd' ? 'border-[#1677ff] text-[#1677ff]' : 'border-[#007acc] text-[#e1e1e1]'} font-medium`}>User</button>
                   <button className="pb-1.5 border-b-2 border-transparent text-[#858585] hover:text-[#cccccc] cursor-not-allowed" title="Workspace settings not available in single-user mode">Workspace</button>
                 </div>
               </div>
 
               {/* Settings Category Tabs (Horizontal) */}
-              <div className="flex bg-[#252526] overflow-x-auto no-scrollbar">
+              <div className={`flex overflow-x-auto no-scrollbar ${uiStyle === 'antd' ? 'bg-[#1e1e1e] border-t border-[#252526]' : 'bg-[#252526]'}`}>
                 {[
                   { id: 'commonly', label: 'Commonly Used' },
                   { id: 'editor', label: 'Text Editor' },
@@ -467,16 +729,22 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
                       setSettingsCategory(cat.id as any);
                       setSearchQuery('');
                     }}
-                    className={`flex-shrink-0 px-4 h-9 flex items-center gap-2 text-[12px] border-r border-[#1e1e1e] transition-all relative ${
+                    className={`flex-shrink-0 px-4 h-9 flex items-center gap-2 text-[12px] transition-all relative ${
                       (settingsCategory === cat.id && !searchQuery)
-                        ? 'bg-[#2d2d2d] text-white' 
-                        : 'bg-[#252526] text-[#858585] hover:bg-[#2d2d2d] hover:text-[#cccccc]'
+                        ? uiStyle === 'antd' 
+                          ? 'text-[#1677ff] font-medium' 
+                          : 'bg-[#2d2d2d] text-white border-r border-[#1e1e1e]'
+                        : uiStyle === 'antd'
+                          ? 'text-[#858585] hover:text-[#cccccc]'
+                          : 'bg-[#252526] text-[#858585] hover:bg-[#2d2d2d] hover:text-[#cccccc] border-r border-[#1e1e1e]'
                     }`}
                   >
                     {settingsCategory === cat.id && !searchQuery && (
-                      <div className="absolute bottom-0 left-2 right-2 h-[2px] bg-[#007acc] rounded-t-full shadow-[0_-2px_8px_rgba(0,122,204,0.4)]" />
+                      <div className={`absolute bottom-0 left-2 right-2 h-[2px] rounded-t-full ${
+                        uiStyle === 'antd' ? 'bg-[#1677ff]' : 'bg-[#007acc] shadow-[0_-2px_8px_rgba(0,122,204,0.4)]'
+                      }`} />
                     )}
-                    <span className={settingsCategory === cat.id && !searchQuery ? 'font-medium' : ''}>{cat.label}</span>
+                    <span>{cat.label}</span>
                   </button>
                 ))}
               </div>
