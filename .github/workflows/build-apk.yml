@@ -50,10 +50,10 @@ jobs:
           cd android
           echo "Restoring clean gradle-wrapper.jar from official Gradle release..."
           mkdir -p gradle/wrapper
-          curl -sL https://github.com/gradle/gradle/raw/v8.14.3/gradle/wrapper/gradle-wrapper.jar -o gradle/wrapper/gradle-wrapper.jar
+          curl -sL https://github.com/gradle/gradle/raw/v8.2.1/gradle/wrapper/gradle-wrapper.jar -o gradle/wrapper/gradle-wrapper.jar
           if ! jar tf gradle/wrapper/gradle-wrapper.jar > /dev/null 2>&1; then
             echo "Downloaded jar is corrupt or failed to download. Regenerating using installed gradle..."
-            gradle wrapper --gradle-version 8.14.3
+            gradle wrapper --gradle-version 8.2.1
           else
             echo "Valid gradle-wrapper.jar successfully restored."
           fi
