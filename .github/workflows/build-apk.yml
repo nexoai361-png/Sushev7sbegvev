@@ -48,10 +48,18 @@ jobs:
       - name: Fix and Regenerate Gradle Wrapper Jar
         run: |
           cd android
-          echo "Removing potentially corrupt gradle-wrapper.jar..."
+          echo "Verifying gradle-wrapper.jar..."
+          mkdir -p gradle/wrapper
+          # Remove corrupt jar if it exists
           rm -f gradle/wrapper/gradle-wrapper.jar
-          echo "Regenerating Gradle Wrapper using system Gradle..."
-          gradle wrapper --gradle-version 8.2.1
+          # Download a fresh jar from the official Gradle repository (raw)
+          curl -sL https://raw.githubusercontent.com/gradle/gradle/v8.2.1/gradle/wrapper/gradle-wrapper.jar -o gradle/wrapper/gradle-wrapper.jar
+          if ! jar tf gradle/wrapper/gradle-wrapper.jar > /dev/null 2>&1; then
+             echo "Download failed or jar still corrupt. Trying to use system gradle..."
+             gradle wrapper --gradle-version 8.2.1 || echo "System gradle not found, build might fail."
+          else
+             echo "gradle-wrapper.jar successfully restored."
+          fi
           chmod +x gradlew
 
       - name: Build Debug APK
