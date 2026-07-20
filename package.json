@@ -14,7 +14,7 @@
     "clean": "rm -rf dist",
     "lint": "tsc --noEmit",
     "sonar": "sonar-scanner",
-    "assets:generate": "capacitor-assets generate --android",
+    "assets:generate": "capacitor-assets generate --android --iconBackgroundColor '#1E1E1E'",
     "cap:sync": "npx cap sync",
     "cap:build": "npm run build && npm run assets:generate && npx cap sync android"
   },

@@ -45,6 +45,19 @@ jobs:
       - name: Sync Web Assets to Android Project
         run: npx cap sync android
 
+      - name: Fix and Regenerate Gradle Wrapper Jar
+        run: |
+          cd android
+          echo "Verifying gradle-wrapper.jar..."
+          mkdir -p gradle/wrapper
+          # If the jar is invalid, download a fresh one from official source
+          if ! jar tf gradle/wrapper/gradle-wrapper.jar > /dev/null 2>&1; then
+            echo "Gradle wrapper jar is corrupt or missing. Downloading version 8.2.1..."
+            curl -sL https://github.com/gradle/gradle/raw/v8.2.1/gradle/wrapper/gradle-wrapper.jar -o gradle/wrapper/gradle-wrapper.jar
+          else
+            echo "Gradle wrapper jar is valid."
+          fi
+
       - name: Build Debug APK
         run: |
           cd android
