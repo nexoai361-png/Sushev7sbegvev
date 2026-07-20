@@ -14,8 +14,9 @@
     "clean": "rm -rf dist",
     "lint": "tsc --noEmit",
     "sonar": "sonar-scanner",
+    "assets:generate": "capacitor-assets generate --android",
     "cap:sync": "npx cap sync",
-    "cap:build": "npm run build && npx cap sync"
+    "cap:build": "npm run build && npm run assets:generate && npx cap sync"
   },
   "dependencies": {
     "@capacitor-community/speech-recognition": "^7.0.1",
@@ -92,6 +93,7 @@
     "vscode-icons-js": "^11.6.1"
   },
   "devDependencies": {
+    "@capacitor/assets": "^3.0.5",
     "@capacitor/cli": "^8.4.2",
     "@types/express": "^4.17.21",
     "@types/js-beautify": "^1.14.3",
