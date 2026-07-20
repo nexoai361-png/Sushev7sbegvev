@@ -27,7 +27,7 @@ jobs:
           cache: 'npm'
 
       - name: Install Node Dependencies
-        run: npm install --legacy-peer-deps --no-audit --no-fund
+        run: npm install --legacy-peer-deps
 
       - name: Build Web Application
         run: npm run build
@@ -38,8 +38,8 @@ jobs:
       - name: Set up Java JDK
         uses: actions/setup-java@v4
         with:
-          java-version: '17'
-          distribution: 'temurin'
+          java-version: '21'
+          distribution: 'zulu'
           cache: 'gradle'
 
       - name: Sync Web Assets to Android Project
@@ -48,25 +48,21 @@ jobs:
       - name: Fix and Regenerate Gradle Wrapper Jar
         run: |
           cd android
-          echo "Verifying gradle-wrapper.jar..."
+          echo "Restoring clean gradle-wrapper.jar from official Gradle release..."
           mkdir -p gradle/wrapper
-          # Remove corrupt jar if it exists
-          rm -f gradle/wrapper/gradle-wrapper.jar
-          # Download a fresh jar from the official Gradle repository (raw)
-          curl -sL https://raw.githubusercontent.com/gradle/gradle/v8.2.1/gradle/wrapper/gradle-wrapper.jar -o gradle/wrapper/gradle-wrapper.jar
+          curl -sL https://github.com/gradle/gradle/raw/v8.14.3/gradle/wrapper/gradle-wrapper.jar -o gradle/wrapper/gradle-wrapper.jar
           if ! jar tf gradle/wrapper/gradle-wrapper.jar > /dev/null 2>&1; then
-             echo "Download failed or jar still corrupt. Trying to use system gradle..."
-             gradle wrapper --gradle-version 8.2.1 || echo "System gradle not found, build might fail."
+            echo "Downloaded jar is corrupt or failed to download. Regenerating using installed gradle..."
+            gradle wrapper --gradle-version 8.14.3
           else
-             echo "gradle-wrapper.jar successfully restored."
+            echo "Valid gradle-wrapper.jar successfully restored."
           fi
-          chmod +x gradlew
 
       - name: Build Debug APK
         run: |
           cd android
           chmod +x gradlew
-          ./gradlew assembleDebug --stacktrace
+          ./gradlew assembleDebug
 
       - name: Upload Debug APK
         uses: actions/upload-artifact@v4
