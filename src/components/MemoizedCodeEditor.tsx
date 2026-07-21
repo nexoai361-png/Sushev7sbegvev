@@ -152,6 +152,12 @@ export const MemoizedCodeEditor = React.memo(({
   const [isCtrlActive, setIsCtrlActive] = useState(false);
   const [isShiftActive, setIsShiftActive] = useState(false);
   const [isAltActive, setIsAltActive] = useState(false);
+
+  const modifierKeysRef = useRef({ isCtrlActive, isShiftActive, isAltActive });
+  useEffect(() => {
+    modifierKeysRef.current = { isCtrlActive, isShiftActive, isAltActive };
+  }, [isCtrlActive, isShiftActive, isAltActive]);
+
   const [wordWrap, setWordWrap] = useState(() => {
     const saved = localStorage.getItem('reversx_wordwrap');
     return saved !== 'false';
@@ -442,6 +448,19 @@ export const MemoizedCodeEditor = React.memo(({
       console.error("Failed to toggle bookmark", e);
     }
   }, [filename, onToggleBookmark]);
+
+  const callbacksRef = useRef<any>({});
+  useEffect(() => {
+    callbacksRef.current = {
+      onShowQuickOpen,
+      onShowCommandPalette,
+      onSaveToLocal,
+      onSaveSelectedAsSnippet,
+      onSetMobileView,
+      executeVirtualShortcut,
+      toggleCurrentLineBookmark
+    };
+  });
 
   useEffect(() => {
     const handleToggle = (e: Event) => {
@@ -840,35 +859,35 @@ Instructions: Modify the code according to the task. Return ONLY the modified co
       base = base.filter(ext => ext !== EditorView.lineWrapping);
     }
     const shortcuts = keymap.of([
-      { key: 'Mod-p', run: () => { onShowQuickOpen?.(); return true; } },
-      { key: 'Mod-Shift-p', run: () => { onShowCommandPalette?.(); return true; } },
+      { key: 'Mod-p', run: () => { callbacksRef.current.onShowQuickOpen?.(); return true; } },
+      { key: 'Mod-Shift-p', run: () => { callbacksRef.current.onShowCommandPalette?.(); return true; } },
       { key: 'Mod-k', run: () => { setShowInlineAI(true); return true; } },
-      { key: 'Mod-s', run: (view) => { onSaveToLocal?.(); return true; } },
-      { key: 'Mod-Shift-s', run: () => { onSaveSelectedAsSnippet?.(); return true; } },
-      { key: 'Mod-Alt-s', run: () => { onSetMobileView?.('chat'); return true; } },
-      { key: 'Ctrl-Alt-b', run: () => { toggleCurrentLineBookmark(); return true; } },
+      { key: 'Mod-s', run: (view) => { callbacksRef.current.onSaveToLocal?.(); return true; } },
+      { key: 'Mod-Shift-s', run: () => { callbacksRef.current.onSaveSelectedAsSnippet?.(); return true; } },
+      { key: 'Mod-Alt-s', run: () => { callbacksRef.current.onSetMobileView?.('chat'); return true; } },
+      { key: 'Ctrl-Alt-b', run: () => { callbacksRef.current.toggleCurrentLineBookmark(); return true; } },
     ]);
 
     const virtualShortcutsHandler = EditorView.domEventHandlers({
       keydown: (event, view) => {
-        if (isCtrlActive) {
+        if (modifierKeysRef.current.isCtrlActive) {
           const key = event.key.toLowerCase();
           if (['v', 'c', 'x', 'z', 'y', 'a', 'f'].includes(key)) {
             event.preventDefault();
             event.stopPropagation();
-            executeVirtualShortcut(key);
+            callbacksRef.current.executeVirtualShortcut(key);
             return true;
           }
         }
         return false;
       },
       beforeinput: (event: any, view) => {
-        if (isCtrlActive && event.data) {
+        if (modifierKeysRef.current.isCtrlActive && event.data) {
           const key = event.data.toLowerCase();
           if (['v', 'c', 'x', 'z', 'y', 'a', 'f'].includes(key)) {
             event.preventDefault();
             event.stopPropagation();
-            executeVirtualShortcut(key);
+            callbacksRef.current.executeVirtualShortcut(key);
             return true;
           }
         }
@@ -877,10 +896,10 @@ Instructions: Modify the code according to the task. Return ONLY the modified co
     });
 
     const mobileInputHandler = EditorView.inputHandler.of((view, from, to, text) => {
-      if (isCtrlActive && text && text.length === 1) {
+      if (modifierKeysRef.current.isCtrlActive && text && text.length === 1) {
         const char = text.toLowerCase();
         if (['v', 'c', 'x', 'z', 'y', 'a', 'f'].includes(char)) {
-          executeVirtualShortcut(char);
+          callbacksRef.current.executeVirtualShortcut(char);
           return true; // handled, don't insert the character
         }
       }
@@ -888,7 +907,7 @@ Instructions: Modify the code according to the task. Return ONLY the modified co
     });
 
     return [...base, shortcuts, virtualShortcutsHandler, mobileInputHandler];
-  }, [language, activeFileBookmarks, wordWrap, onShowQuickOpen, onShowCommandPalette, onSaveToLocal, onSaveSelectedAsSnippet, onSetActiveTab, onSetMobileView, toggleCurrentLineBookmark, isCtrlActive, isShiftActive, isAltActive, executeVirtualShortcut]);
+  }, [language, activeFileBookmarks, wordWrap]);
 
   return (
     <div className="h-full w-full flex flex-col bg-background">
@@ -1052,7 +1071,6 @@ Instructions: Modify the code according to the task. Return ONLY the modified co
           <svg className="w-3.5 h-3.5 text-[#007acc] shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
             <path strokeLinecap="round" strokeLinejoin="round" d="M3 7v10a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-6l-2-2H5a2 2 0 00-2 2z" />
           </svg>
-          <span className="font-semibold">reversx-workspace</span>
         </div>
         
         {(() => {

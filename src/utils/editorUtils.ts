@@ -37,7 +37,18 @@ import {
   solarizedDark as cmSolarizedDark,
   solarizedLight as cmSolarizedLight,
   xcodeDark as cmXcodeDark,
-  xcodeLight as cmXcodeLight
+  xcodeLight as cmXcodeLight,
+  abcdef as cmAbcdef,
+  androidstudio as cmAndroidstudio,
+  copilot as cmCopilot,
+  darcula as cmDarcula,
+  abyss as cmAbyss,
+  andromeda as cmAndromeda,
+  kimbie as cmKimbie,
+  okaidia as cmOkaidia,
+  quietlight as cmQuietlight,
+  red as cmRed,
+  tomorrowNightBlue as cmTomorrowNightBlue
 } from '@uiw/codemirror-themes-all';
 import { EditorView, keymap, Decoration, DecorationSet, ViewPlugin, MatchDecorator, WidgetType, ViewUpdate, gutter, GutterMarker } from '@codemirror/view';
 import { Prec } from '@codemirror/state';
@@ -79,25 +90,34 @@ export const SYNTAX_THEMES: Record<string, any> = {
   'Solarized Light': cmSolarizedLight,
   'Xcode Dark': cmXcodeDark,
   'Xcode Light': cmXcodeLight,
+  'Abcdef': cmAbcdef,
+  'Android Studio': cmAndroidstudio,
+  'Copilot': cmCopilot,
+  'Darcula': cmDarcula,
+  'Abyss': cmAbyss,
+  'Andromeda': cmAndromeda,
+  'Kimbie': cmKimbie,
+  'Okaidia': cmOkaidia,
+  'Quiet Light': cmQuietlight,
+  'Red': cmRed,
+  'Tomorrow Night Blue': cmTomorrowNightBlue,
 };
+
+const urlDecorator = new MatchDecorator({
+  regexp: /https?:\/\/[^\s"'`<>{}|\\^]+[^\s"'`<>{}|\\^.,;?!]/g,
+  decoration: match => Decoration.mark({
+    class: "cm-url",
+    attributes: { title: "Ctrl+Click to open link" }
+  })
+});
 
 const urlHighlighter = ViewPlugin.fromClass(class {
   decorations: DecorationSet;
   constructor(view: EditorView) {
-    this.decorations = this.getDeco(view);
+    this.decorations = urlDecorator.createDeco(view);
   }
   update(update: any) {
-    if (update.docChanged || update.viewportChanged) this.decorations = this.getDeco(update.view);
-  }
-  getDeco(view: EditorView) {
-    const builder = new MatchDecorator({
-      regexp: /https?:\/\/[^\s"'`<>{}|\\^]+[^\s"'`<>{}|\\^.,;?!]/g,
-      decoration: match => Decoration.mark({
-        class: "cm-url",
-        attributes: { title: "Ctrl+Click to open link" }
-      })
-    });
-    return builder.createDeco(view);
+    if (update.docChanged || update.viewportChanged) this.decorations = urlDecorator.createDeco(update.view);
   }
 }, {
   decorations: v => v.decorations,
@@ -196,27 +216,25 @@ class ColorPreviewWidget extends WidgetType {
   }
 }
 
+const colorDecorator = new MatchDecorator({
+  regexp: /#([a-fA-F0-9]{6}|[a-fA-F0-9]{3}|[a-fA-F0-9]{8}|[a-fA-F0-9]{4})\b|(?:rgb|rgba)\(\s*\d{1,3}%?\s*,\s*\d{1,3}%?\s*,\s*\d{1,3}%?\s*(?:,\s*[\d.]+%?\s*)?\)|(?:hsl|hsla)\(\s*[\d.]+%?\s*,\s*[\d.]+%?\s*,\s*[\d.]+%?\s*(?:,\s*[\d.]+%?\s*)?\)/gi,
+  decoration: (match, view, pos) => {
+    return Decoration.widget({
+      widget: new ColorPreviewWidget(match[0], view, pos),
+      side: -1
+    });
+  }
+});
+
 const colorHighlighter = ViewPlugin.fromClass(class {
   decorations: DecorationSet;
   constructor(view: EditorView) {
-    this.decorations = this.getDeco(view);
+    this.decorations = colorDecorator.createDeco(view);
   }
   update(update: ViewUpdate) {
     if (update.docChanged || update.viewportChanged) {
-      this.decorations = this.getDeco(update.view);
+      this.decorations = colorDecorator.createDeco(update.view);
     }
-  }
-  getDeco(view: EditorView) {
-    const decorator = new MatchDecorator({
-      regexp: /#([a-fA-F0-9]{6}|[a-fA-F0-9]{3}|[a-fA-F0-9]{8}|[a-fA-F0-9]{4})\b|(?:rgb|rgba)\(\s*\d{1,3}%?\s*,\s*\d{1,3}%?\s*,\s*\d{1,3}%?\s*(?:,\s*[\d.]+%?\s*)?\)|(?:hsl|hsla)\(\s*[\d.]+%?\s*,\s*[\d.]+%?\s*,\s*[\d.]+%?\s*(?:,\s*[\d.]+%?\s*)?\)/gi,
-      decoration: (match, view, pos) => {
-        return Decoration.widget({
-          widget: new ColorPreviewWidget(match[0], view, pos),
-          side: -1
-        });
-      }
-    });
-    return decorator.createDeco(view);
   }
 }, {
   decorations: v => v.decorations
@@ -319,34 +337,32 @@ export const createEmmetGhostTextPlugin = (syntaxType: 'markup' | 'stylesheet') 
   });
 };
 
+const betterCommentsDecorator = new MatchDecorator({
+  // Match comments with specific prefixes
+  // Support for both // and /* */ styles
+  regexp: /(\/\/|\/\*)\s*(!|\?|TODO|\*)(.*?)(\*\/|$)/gi,
+  decoration: (match) => {
+    const prefix = match[2].toUpperCase();
+    let className = "cm-better-comment-default";
+    
+    if (prefix === '!') className = "cm-better-comment-alert";
+    else if (prefix === '?') className = "cm-better-comment-query";
+    else if (prefix === 'TODO') className = "cm-better-comment-todo";
+    else if (prefix === '*') className = "cm-better-comment-highlight";
+    
+    return Decoration.mark({ class: className });
+  }
+});
+
 const betterCommentsPlugin = ViewPlugin.fromClass(class {
   decorations: DecorationSet;
   constructor(view: EditorView) {
-    this.decorations = this.getDeco(view);
+    this.decorations = betterCommentsDecorator.createDeco(view);
   }
   update(update: ViewUpdate) {
     if (update.docChanged || update.viewportChanged || update.selectionSet) {
-      this.decorations = this.getDeco(update.view);
+      this.decorations = betterCommentsDecorator.createDeco(update.view);
     }
-  }
-  getDeco(view: EditorView) {
-    const builder = new MatchDecorator({
-      // Match comments with specific prefixes
-      // Support for both // and /* */ styles
-      regexp: /(\/\/|\/\*)\s*(!|\?|TODO|\*)(.*?)(\*\/|$)/gi,
-      decoration: (match) => {
-        const prefix = match[2].toUpperCase();
-        let className = "cm-better-comment-default";
-        
-        if (prefix === '!') className = "cm-better-comment-alert";
-        else if (prefix === '?') className = "cm-better-comment-query";
-        else if (prefix === 'TODO') className = "cm-better-comment-todo";
-        else if (prefix === '*') className = "cm-better-comment-highlight";
-        
-        return Decoration.mark({ class: className });
-      }
-    });
-    return builder.createDeco(view);
   }
 }, {
   decorations: v => v.decorations

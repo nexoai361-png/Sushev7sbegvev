@@ -340,6 +340,126 @@ export const APP_THEMES: Record<string, any> = {
     accentForeground: '#ffffff',
     sidebar: '#161b22',
     border: '#30363d'
+  },
+  'Tokyo Night': {
+    background: '#1a1b26',
+    foreground: '#a9b1d6',
+    muted: '#565f89',
+    subtle: '#24283b',
+    accent: '#7aa2f7',
+    accentForeground: '#ffffff',
+    sidebar: '#16161e',
+    border: '#32344a'
+  },
+  'Gruvbox Dark': {
+    background: '#282828',
+    foreground: '#ebdbb2',
+    muted: '#928374',
+    subtle: '#3c3836',
+    accent: '#fe8019',
+    accentForeground: '#282828',
+    sidebar: '#1d2021',
+    border: '#504945'
+  },
+  'Solarized Dark': {
+    background: '#002b36',
+    foreground: '#839496',
+    muted: '#586e75',
+    subtle: '#073642',
+    accent: '#268bd2',
+    accentForeground: '#ffffff',
+    sidebar: '#00212b',
+    border: '#073642'
+  },
+  'Synthwave 84': {
+    background: '#2b213a',
+    foreground: '#f0eefe',
+    muted: '#848bb3',
+    subtle: '#372948',
+    accent: '#f92aad',
+    accentForeground: '#ffffff',
+    sidebar: '#241b2f',
+    border: '#403056'
+  },
+  'Cobalt2': {
+    background: '#193549',
+    foreground: '#ffffff',
+    muted: '#5f7e97',
+    subtle: '#152c3d',
+    accent: '#ffc600',
+    accentForeground: '#193549',
+    sidebar: '#122737',
+    border: '#152c3d'
+  },
+  'Monokai Pro': {
+    background: '#2d2a2e',
+    foreground: '#fcfcfa',
+    muted: '#726e75',
+    subtle: '#403e41',
+    accent: '#ffd866',
+    accentForeground: '#2d2a2e',
+    sidebar: '#221f22',
+    border: '#403e41'
+  },
+  'Cyberpunk': {
+    background: '#0f0f1d',
+    foreground: '#00ffcc',
+    muted: '#6f5d8a',
+    subtle: '#24183d',
+    accent: '#ff007f',
+    accentForeground: '#ffffff',
+    sidebar: '#090911',
+    border: '#2a1b4e'
+  },
+  'Nordic Frost': {
+    background: '#2f384c',
+    foreground: '#eef2f7',
+    muted: '#7a889b',
+    subtle: '#3b465e',
+    accent: '#81a1c1',
+    accentForeground: '#2f384c',
+    sidebar: '#242b3b',
+    border: '#3b465e'
+  },
+  'Nord Light': {
+    background: '#e5e9f0',
+    foreground: '#2e3440',
+    muted: '#4c566a',
+    subtle: '#d8dee9',
+    accent: '#88c0d0',
+    accentForeground: '#2e3440',
+    sidebar: '#eceff4',
+    border: '#d8dee9'
+  },
+  'Rose Pine': {
+    background: '#191724',
+    foreground: '#e0def4',
+    muted: '#908caa',
+    subtle: '#1f1d2e',
+    accent: '#ebbcba',
+    accentForeground: '#191724',
+    sidebar: '#12101a',
+    border: '#26233a'
+  },
+  'Night Owl': {
+    background: '#011627',
+    foreground: '#d6deeb',
+    muted: '#5f7e97',
+    subtle: '#0b2942',
+    accent: '#82aaff',
+    accentForeground: '#011627',
+    sidebar: '#010e17',
+    border: '#1d3b53'
+  },
+  'Aura': {
+    background: '#15141b',
+    foreground: '#edecee',
+    muted: '#6d6d6d',
+    subtle: '#201e2a',
+    accent: '#a277ff',
+    accentForeground: '#15141b',
+    sidebar: '#110f18',
+    border: '#201e2a'
   }
 };
 

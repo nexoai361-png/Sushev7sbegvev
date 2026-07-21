@@ -80,7 +80,7 @@ export const SHORTCUT_PRESETS: ShortcutPreset[] = [
   }
 ];
 
-export const AVAILABLE_ACTIONS = {
+export const AVAILABLE_ACTIONS: Record<string, { icon: any; size: number; title: string; color?: string }> = {
   'left': { icon: ChevronLeft, size: 18, title: 'Move Left' },
   'up': { icon: ChevronUp, size: 18, title: 'Move Up' },
   'down': { icon: ChevronDown, size: 18, title: 'Move Down' },
@@ -149,8 +149,9 @@ export const MobileKeyboardToolbar = React.memo(({
            return (
              <button 
                key={`${actionId}-${idx}`} 
-               onClick={handleClick} 
-               className={`w-11 h-full flex items-center justify-center transition-all shrink-0 ${action.color ? '' : 'text-[var(--color-foreground)] hover:text-white'} active:bg-[var(--color-subtle)]`}
+               onClick={handleClick}
+              onMouseDown={(e) => e.preventDefault()}
+                className={`w-11 h-full flex items-center justify-center transition-all shrink-0 ${action.color ? '' : 'text-[var(--color-foreground)] hover:text-white'} active:bg-[var(--color-subtle)]`}
                style={action.color ? { color: action.color } : {}}
                title={action.title}
              >
@@ -158,13 +159,14 @@ export const MobileKeyboardToolbar = React.memo(({
              </button>
            );
          })}
-         <button onClick={onHide} className="w-11 h-full flex items-center justify-center text-[var(--color-muted)] hover:text-[var(--color-foreground)] transition-all shrink-0 ml-auto" title="Hide Toolbar"><Minimize2 size={14} /></button>
+         <button onClick={onHide} onMouseDown={(e) => e.preventDefault()} className="w-11 h-full flex items-center justify-center text-[var(--color-muted)] hover:text-[var(--color-foreground)] transition-all shrink-0 ml-auto" title="Hide Toolbar"><Minimize2 size={14} /></button>
       </div>
       <div className="flex items-center overflow-x-auto no-scrollbar gap-1 h-9 px-1">
          {/* Sticky Modifier Keys */}
          {onToggleCtrl && (
            <button
              onClick={onToggleCtrl}
+              onMouseDown={(e) => e.preventDefault()}
              className={`px-3 h-full font-sans text-[11px] font-bold transition-all shrink-0 flex items-center justify-center ${
                isCtrlActive
                  ? 'text-[var(--color-accent)]'
@@ -178,6 +180,7 @@ export const MobileKeyboardToolbar = React.memo(({
          {onToggleShift && (
            <button
              onClick={onToggleShift}
+              onMouseDown={(e) => e.preventDefault()}
              className={`px-3 h-full font-sans text-[11px] font-bold transition-all shrink-0 flex items-center justify-center ${
                isShiftActive
                  ? 'text-[var(--color-accent)]'
@@ -191,6 +194,7 @@ export const MobileKeyboardToolbar = React.memo(({
          {onToggleAlt && (
            <button
              onClick={onToggleAlt}
+              onMouseDown={(e) => e.preventDefault()}
              className={`px-3 h-full font-sans text-[11px] font-bold transition-all shrink-0 flex items-center justify-center ${
                isAltActive
                  ? 'text-[var(--color-accent)]'
@@ -210,6 +214,7 @@ export const MobileKeyboardToolbar = React.memo(({
            <button
              key={char}
              onClick={() => onInsert(char)}
+              onMouseDown={(e) => e.preventDefault()}
              className="w-12 h-full flex items-center justify-center text-[14px] text-[var(--color-foreground)] hover:text-white active:bg-[var(--color-subtle)] transition-all shrink-0 font-sans"
            >
              {char}
