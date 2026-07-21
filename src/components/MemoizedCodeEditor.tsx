@@ -81,6 +81,7 @@ interface MemoizedCodeEditorProps {
   onToggleBookmark?: (filename: string, lineNumber: number, lineContent: string) => void;
   shortcutPresetName?: string;
   customSymbolsStr?: string;
+  customActionsStr?: string;
 }
 
 export const MemoizedCodeEditor = React.memo(({ 
@@ -135,7 +136,8 @@ export const MemoizedCodeEditor = React.memo(({
   bookmarks = [],
   onToggleBookmark,
   shortcutPresetName = 'VS Code Default',
-  customSymbolsStr = ''
+  customSymbolsStr = '',
+  customActionsStr = ''
 }: MemoizedCodeEditorProps) => {
   const [localValue, setLocalValue] = useState(code);
   const [currentLineNumber, setCurrentLineNumber] = useState(1);
@@ -169,6 +171,17 @@ export const MemoizedCodeEditor = React.memo(({
     const preset = SHORTCUT_PRESETS.find(p => p.name === shortcutPresetName);
     return preset ? preset.symbols : SHORTCUT_PRESETS[0].symbols;
   }, [shortcutPresetName, customSymbolsStr]);
+
+  const actions = useMemo(() => {
+    if (customActionsStr) {
+      return customActionsStr
+        .split(/[,\s]+/)
+        .map(s => s.trim())
+        .filter(s => s.length > 0);
+    }
+    return undefined; // use default in MobileKeyboardToolbar
+  }, [customActionsStr]);
+
   const [isMobileRow1Collapsed, setIsMobileRow1Collapsed] = useState(false);
   const [isMobileRow2Collapsed, setIsMobileRow2Collapsed] = useState(false);
   const [isKeyboardToolbarHidden, setIsKeyboardToolbarHidden] = useState(false);
@@ -1230,6 +1243,7 @@ Instructions: Modify the code according to the task. Return ONLY the modified co
           onShowQuickOpen={onShowQuickOpen}
           onShowCommandPalette={onShowCommandPalette}
           symbols={symbols}
+          actions={actions}
           isCtrlActive={isCtrlActive}
           isShiftActive={isShiftActive}
           isAltActive={isAltActive}

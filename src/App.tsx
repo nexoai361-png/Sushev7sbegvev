@@ -851,6 +851,7 @@ export default function App() {
   const [bookmarks, setBookmarks] = useState<Bookmark[]>([]);
   const [shortcutPresetName, setShortcutPresetName] = useState(() => localStorage.getItem('reversx_shortcut_preset_name') || 'VS Code Default');
   const [customSymbolsStr, setCustomSymbolsStr] = useState(() => localStorage.getItem('reversx_custom_symbols') || '<, >, /, {, }, [, ], ;, (, ), ", \', :, =, !, &, |, +, -, *, %, ?, #, $, @, ^, ~, `');
+  const [customActionsStr, setCustomActionsStr] = useState(() => localStorage.getItem('reversx_custom_actions') || 'left, up, down, right, |, undo, redo, |, search, quickOpen, commandPalette, tab, bookmark, save');
 
   useEffect(() => {
     localStorage.setItem('reversx_shortcut_preset_name', shortcutPresetName);
@@ -859,6 +860,10 @@ export default function App() {
   useEffect(() => {
     localStorage.setItem('reversx_custom_symbols', customSymbolsStr);
   }, [customSymbolsStr]);
+
+  useEffect(() => {
+    localStorage.setItem('reversx_custom_actions', customActionsStr);
+  }, [customActionsStr]);
 
   const [markers, setMarkers] = useState<EditorMarker[]>([]);
   const [auditResults, setAuditResults] = useState<string | null>(null);
@@ -1242,6 +1247,9 @@ export default function App() {
         setAppFontName(await checkAndMigrate('reversx_app_font', false, 'System Font'));
         setSmallestWidthPortrait(Number(await checkAndMigrate('reversx_smallest_width_portrait', false, 360)));
         setSmallestWidthLandscape(Number(await checkAndMigrate('reversx_smallest_width_landscape', false, 600)));
+        setShortcutPresetName(await checkAndMigrate('reversx_shortcut_preset_name', false, 'VS Code Default'));
+        setCustomSymbolsStr(await checkAndMigrate('reversx_custom_symbols', false, '<, >, /, {, }, [, ], ;, (, ), ", \', :, =, !, &, |, +, -, *, %, ?, #, $, @, ^, ~, `'));
+        setCustomActionsStr(await checkAndMigrate('reversx_custom_actions', false, 'left, up, down, right, |, undo, redo, |, search, quickOpen, commandPalette, tab, bookmark, save'));
         
         const loadedBookmarks = await checkAndMigrate('reversx_bookmarks', true, []);
         setBookmarks(loadedBookmarks);
@@ -1254,6 +1262,14 @@ export default function App() {
     };
     setTimeout(loadState, 4000);
   }, []);
+
+  useEffect(() => {
+    if (isDbLoaded) {
+      idbSet('reversx_shortcut_preset_name', shortcutPresetName);
+      idbSet('reversx_custom_symbols', customSymbolsStr);
+      idbSet('reversx_custom_actions', customActionsStr);
+    }
+  }, [shortcutPresetName, customSymbolsStr, customActionsStr, isDbLoaded]);
 
   useEffect(() => {
     let active = true;
@@ -5973,6 +5989,7 @@ export default function App() {
                           onToggleBookmark={handleToggleBookmark}
                           shortcutPresetName={shortcutPresetName}
                           customSymbolsStr={customSymbolsStr}
+                           customActionsStr={customActionsStr}
                         />
                       </div>
                       
@@ -6328,6 +6345,8 @@ export default function App() {
         setShortcutPresetName={setShortcutPresetName}
         customSymbolsStr={customSymbolsStr}
         setCustomSymbolsStr={setCustomSymbolsStr}
+        customActionsStr={customActionsStr}
+        setCustomActionsStr={setCustomActionsStr}
         fileIconSize={fileIconSize}
         setFileIconSize={setFileIconSize}
         smallestWidthPortrait={smallestWidthPortrait}

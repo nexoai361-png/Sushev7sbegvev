@@ -31,6 +31,8 @@ interface SettingsModalProps {
   setShortcutPresetName: (preset: string) => void;
   customSymbolsStr: string;
   setCustomSymbolsStr: (symbols: string) => void;
+  customActionsStr: string;
+  setCustomActionsStr: (actions: string) => void;
   fileIconSize: number;
   setFileIconSize: (size: number) => void;
   smallestWidthPortrait: number;
@@ -68,6 +70,8 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
   setShortcutPresetName,
   customSymbolsStr,
   setCustomSymbolsStr,
+  customActionsStr,
+  setCustomActionsStr,
   fileIconSize,
   setFileIconSize,
   smallestWidthPortrait,
@@ -573,9 +577,9 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
     },
     {
       id: 'customSymbolsStr',
-      title: 'Custom Helper Symbols',
+      title: 'Custom Helper Symbols (Row 2)',
       keyName: 'shortcuts.customSymbols',
-      description: 'Enter your custom symbols (separated by spaces or commas) for the mobile helper toolbar.',
+      description: 'Enter your custom symbols (separated by spaces or commas) for the mobile helper toolbar (Row 2).',
       category: 'shortcuts',
       render: () => uiStyle === 'antd' ? (
         <Input
@@ -593,6 +597,29 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
           className="w-full max-w-md h-7 px-2.5 bg-[#2d2d2d] border border-[#3c3c3c] text-white text-[12px] hover:bg-[#3c3c3c] transition-all focus:outline-none focus:border-[#007acc] font-mono rounded-[2px]"
           placeholder="e.g. <, >, /, {, }, ;, (, )"
           disabled={shortcutPresetName !== 'Custom Layout'}
+        />
+      )
+    },
+    {
+      id: 'customActionsStr',
+      title: 'Custom Helper Actions (Row 1)',
+      keyName: 'shortcuts.customActions',
+      description: 'Enter your custom action IDs (separated by spaces or commas) for the mobile helper toolbar (Row 1). Available: left, up, down, right, undo, redo, search, quickOpen, commandPalette, tab, bookmark, save. Use "|" for a separator.',
+      category: 'shortcuts',
+      render: () => uiStyle === 'antd' ? (
+        <Input
+          value={customActionsStr}
+          onChange={(e) => setCustomActionsStr(e.target.value)}
+          className="w-full max-w-md"
+          placeholder="e.g. left, right, |, undo, redo, |, save"
+        />
+      ) : (
+        <input
+          type="text"
+          value={customActionsStr}
+          onChange={(e) => setCustomActionsStr(e.target.value)}
+          className="w-full max-w-md h-7 px-2.5 bg-[#2d2d2d] border border-[#3c3c3c] text-white text-[12px] hover:bg-[#3c3c3c] transition-all focus:outline-none focus:border-[#007acc] font-mono rounded-[2px]"
+          placeholder="e.g. left, right, |, undo, redo, |, save"
         />
       )
     },
